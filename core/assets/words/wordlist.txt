@@ -1,5 +1,9 @@
-3
-3
+7
+7
 1 elephant
 1 whisper
 1 roundabout
+1 wonderful
+1 gullible
+1 coruscant
+1 acumen

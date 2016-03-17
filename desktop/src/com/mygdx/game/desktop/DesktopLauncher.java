@@ -12,7 +12,7 @@ public class DesktopLauncher {
             config.height = LwjglApplicationConfiguration.getDesktopDisplayMode().height;
             
             config.width = 400;
-            config.height = 400;          
+            config.height = 600;          
             new LwjglApplication(new Ephelant(), config);            
 	}
 }
