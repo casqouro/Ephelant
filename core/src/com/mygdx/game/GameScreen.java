@@ -6,13 +6,17 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.Animation.PlayMode;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
@@ -28,10 +32,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /*  To Do
-    2.  Animate the timer now that the assets are built
+    6.  Input should be blocked once the timer ends.
     3.  Pressing 'ESC' should pause everything + ask yes/no to quit
-    4.  Everything should be fresh/reset after exiting/re-entering
-        maybe a setup method which is called once upon entering, then reset?
     5.  There's a bug with extra letters appearing if the user starts a game,
         places some letters, escapes to menu, then starts again.
 */
@@ -63,6 +65,10 @@ public class GameScreen {
     TextureRegionDrawable readyTexture;
     TextureRegionDrawable notreadyTexture;
     
+    private final TextureAtlas timerAtlas;
+    private final Animation timerAnim;
+    public TimerActor timerActor;
+    
     private static final int CLEAR = 0;
     private static final int GRAY = 1;
     private static final int WHITE = 2;
@@ -71,7 +77,7 @@ public class GameScreen {
     
     public boolean exitGame = false;
     public boolean setupCalled = false;
-    
+        
     public GameScreen() {
         gameScreenStage = new Stage();
         gameScreenStage.addListener(new gameInputListener());    
@@ -89,14 +95,12 @@ public class GameScreen {
         wordLabel = new Label("...", fontStyle);
         wordLabel.setBounds(0, 400, Gdx.graphics.getWidth(), 200);
         wordLabel.setWrap(true);        
-        wordLabel.setAlignment(Align.center);
-        //gameScreenStage.addActor(wordLabel);        
+        wordLabel.setAlignment(Align.center);     
         userLabel = new Label("...", fontStyle);
         userLabel.setPosition(100, 100);      
         userLabel.setBounds(0, 300, Gdx.graphics.getWidth(), 100);
         userLabel.setWrap(true);
-        userLabel.setAlignment(Align.center);
-        //gameScreenStage.addActor(userLabel);        
+        userLabel.setAlignment(Align.center);        
 
         word = "";
         user = "";
@@ -131,19 +135,25 @@ public class GameScreen {
         
         gameScreenStage.addActor(newWordButton);
         gameScreenStage.addActor(readyButton);
+        
+        timerAtlas = new TextureAtlas(Gdx.files.internal("animation//timer.atlas")); 
+        timerAnim = new Animation(1 / (timerAtlas.getRegions().size / 10f), timerAtlas.getRegions());   
+        timerActor = new TimerActor(timerAnim);
+        gameScreenStage.addActor(timerActor);
     }
-    
+        
     public void setup() {
         gameScreenStage.clear();
         gameScreenStage.addListener(new gameInputListener());
         gameScreenStage.addActor(newWordButton);
-        gameScreenStage.addActor(readyButton);
+        gameScreenStage.addActor(readyButton);        
         word = "";
         user = "";
         userLabel.setText("");
         wordLoaded = false;
         ready = false;
-        position = 1;
+        position = 1;        
+        timerActor.reset();
     }
     
     // Get a random word from the wordlist
@@ -303,6 +313,7 @@ public class GameScreen {
         }
         
         if (!valid) {
+            timerActor.advance();
             error.play();
         }              
     } 
@@ -325,6 +336,7 @@ public class GameScreen {
         }
         
         if (!valid) {
+            timerActor.advance();
             error.play();
         }        
     }    
@@ -354,10 +366,12 @@ public class GameScreen {
             if (wordLoaded) {
                 readyButton.remove();
                 gameScreenStage.addActor(userLabel);
+                gameScreenStage.addActor(timerActor);                
+                timerActor.runTimer = true;
                 
                 shuffleLetters();
                 updateWordLabel();        
-                ready = true;                
+                ready = true;    
             }
         }        
     }
@@ -367,7 +381,7 @@ public class GameScreen {
         public boolean keyDown(InputEvent event, int keycode) {
             switch (keycode) {
                 case Input.Keys.ESCAPE:
-                    exitGame = true;
+                    exitGame = true;                                        
                     break;
                 case Input.Keys.LEFT:
                     if (ready) { handleLeft(); }

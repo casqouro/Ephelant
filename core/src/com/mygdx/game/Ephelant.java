@@ -2,16 +2,10 @@ package com.mygdx.game;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Ephelant extends ApplicationAdapter {
     private OrthographicCamera camera;
@@ -38,7 +32,7 @@ public class Ephelant extends ApplicationAdapter {
                 When a letter is selected I could probably troll the remaining
                 unplaced letters and add ALL letters of a type to an array.
                 Then I could execute the logic for each one until yes/no.
-    */   
+    */     
     
     @Override
     public void create() {
@@ -50,7 +44,7 @@ public class Ephelant extends ApplicationAdapter {
         camera.update();                                                   
         
         startScreen = new StartScreen();   
-        gameScreen = new GameScreen();
+        gameScreen = new GameScreen();               
     }
                                      
     @Override
@@ -73,16 +67,17 @@ public class Ephelant extends ApplicationAdapter {
         }
         
         if (screen == GAME) {
+            Gdx.input.setInputProcessor(gameScreen.gameScreenStage); 
+            
             if (!gameScreen.setupCalled) {
                 gameScreen.setup();
                 gameScreen.setupCalled = true;
-            }
-            
-            Gdx.input.setInputProcessor(gameScreen.gameScreenStage);            
+            }                      
             batch.begin();
-            batch.end();
-            gameScreen.gameScreenStage.act();
-            gameScreen.gameScreenStage.draw();
+            batch.end();            
+            
+            gameScreen.gameScreenStage.draw();            
+            gameScreen.gameScreenStage.act();                                    
             
             if (gameScreen.exitGame) {
                 screen = MENU;
