@@ -8,7 +8,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 public class TimerActor extends Actor {
     private final Animation anim;
     private float elapsedTime = 0;
-    public boolean runTimer = false;
+    private boolean runTimer = false;
     
     public TimerActor(Animation anim) {
         this.anim = anim;
@@ -23,12 +23,36 @@ public class TimerActor extends Actor {
         runTimer = false;
     }
     
-    public void start() {
+    public void runTimer() {
         runTimer = true;
+    }
+    
+    public void stopTimer() {
+        runTimer = false;
     }
     
     public void advance() {
         elapsedTime += 0.5f;
+    }
+    
+    public Boolean isDone() {
+        return anim.isAnimationFinished(elapsedTime);
+    }
+    
+    public void setTimerLength(float frameDuration) {
+        // lowering it makes it faster
+        // smaller words take less time
+        
+        // raising it makes it slower
+        // bigger words take more time
+        
+        // higher difficulty takes less time, so it needs to be lower
+        // lower difficulty takes more time, so it needs to be higher
+       
+        float duration = (1 / (anim.getKeyFrames().length / frameDuration));
+        
+        System.out.println(frameDuration);
+        anim.setFrameDuration(duration);
     }
     
     @Override

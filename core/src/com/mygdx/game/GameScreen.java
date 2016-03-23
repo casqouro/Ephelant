@@ -7,7 +7,6 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.Animation.PlayMode;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -16,72 +15,80 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/*  To Do
-    6.  Input should be blocked once the timer ends.
-    3.  Pressing 'ESC' should pause everything + ask yes/no to quit
-    5.  There's a bug with extra letters appearing if the user starts a game,
-        places some letters, escapes to menu, then starts again.
-*/
-
 public class GameScreen {
     Stage gameScreenStage;
+    private final WordHandler handler;    
     
     private final BitmapFont font;
     private final FreeTypeFontGenerator generator;
-    private final FreeTypeFontGenerator.FreeTypeFontParameter parameter;              
-    
-    private String word; 
-    private String user;
-    private int[] state; 
-    private boolean wordLoaded;    
-    private boolean ready;
-    private Map<Integer, String> shuffled;
+    private final FreeTypeFontGenerator.FreeTypeFontParameter parameter;    
     
     private final Label wordLabel;
-    private final Label userLabel;    
+    private final Label userLabel;   
+    
+    private final Button newWordButton;
+    private final Button readyButton;
+    private final Button restartButton;
+    private final Button randomtourButton;
+    private final Button difficultyButton;
+    
+    private int DIFFICULTY = 1;
+    private final int EASY = 0;
+    private final int MEDIUM = 1;
+    private final int HARD = 2;
+    private int RANDOMTOUR = 0;
+    private final int RANDOM = 0;
+    private final int TOUR = 1;
+    
+    private final TimerActor timerActor;    
     
     private final Sound error;
-    private final Sound correct;
+    private final Sound correct;   
+    private final Sound click;
     
-    Button newWordButton;
-    Button readyButton;
-    
-    TextureRegionDrawable newWordTexture;
-    TextureRegionDrawable readyTexture;
-    TextureRegionDrawable notreadyTexture;
-    
-    private final TextureAtlas timerAtlas;
-    private final Animation timerAnim;
-    public TimerActor timerActor;
-    
-    private static final int CLEAR = 0;
-    private static final int GRAY = 1;
-    private static final int WHITE = 2;
-    private static final int RED = 3;    
-    private int position = 1;    
-    
+    private boolean ready = false;
     public boolean exitGame = false;
-    public boolean setupCalled = false;
-        
+    public boolean setupCalled = false;    
+    
+    TextureRegionDrawable easyTexture =     new TextureRegionDrawable(
+                                            new TextureRegion(
+                                            new Texture(
+                                            new FileHandle("images//easy.png"))));  
+    
+    TextureRegionDrawable mediumTexture =   new TextureRegionDrawable(
+                                            new TextureRegion(
+                                            new Texture(
+                                            new FileHandle("images//medium.png"))));
+
+    TextureRegionDrawable hardTexture =     new TextureRegionDrawable(
+                                            new TextureRegion(
+                                            new Texture(
+                                            new FileHandle("images//hard.png"))));
+    
+    TextureRegionDrawable randomTexture =     new TextureRegionDrawable(
+                                            new TextureRegion(
+                                            new Texture(
+                                            new FileHandle("images//random.png"))));
+
+    TextureRegionDrawable tourTexture =     new TextureRegionDrawable(
+                                            new TextureRegion(
+                                            new Texture(
+                                            new FileHandle("images//tour.png"))));
+    
     public GameScreen() {
         gameScreenStage = new Stage();
-        gameScreenStage.addListener(new gameInputListener());    
+        gameScreenStage.addListener(new gameInputListener());        
+        handler = new WordHandler();
         
+        // Generates the font using the specific True-Type-Font from assets
         generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts//Raleway-Medium.ttf"));
         parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
         parameter.size = 40;
@@ -89,9 +96,9 @@ public class GameScreen {
         font.getData().markupEnabled = true;
         generator.dispose();        
         
+        // Sets the label fonts and locations
         Label.LabelStyle fontStyle = new Label.LabelStyle(font, Color.WHITE);
-        // background not working, needs to be researched
-        fontStyle.background = new TextureRegionDrawable(new TextureRegion(new Texture(new FileHandle("images//black.png")))) {};
+        // fontStyle.background = new TextureRegionDrawable(new TextureRegion(new Texture(new FileHandle("images//black.png")))) {}; (NOT WORKING?)
         wordLabel = new Label("...", fontStyle);
         wordLabel.setBounds(0, 400, Gdx.graphics.getWidth(), 200);
         wordLabel.setWrap(true);        
@@ -100,280 +107,230 @@ public class GameScreen {
         userLabel.setPosition(100, 100);      
         userLabel.setBounds(0, 300, Gdx.graphics.getWidth(), 100);
         userLabel.setWrap(true);
-        userLabel.setAlignment(Align.center);        
-
-        word = "";
-        user = "";
-        state = new int[0];
-        wordLoaded = false;        
-        
-        error = Gdx.audio.newSound(Gdx.files.internal("sounds//error.ogg"));
-        correct = Gdx.audio.newSound(Gdx.files.internal("sounds//correct.ogg"));  
-        
-        newWordButton = new Button();
-        readyButton = new Button();   
-        newWordTexture = new TextureRegionDrawable(
+        userLabel.setAlignment(Align.center);      
+          
+        TextureRegionDrawable newWordTexture =  new TextureRegionDrawable(
                                                   new TextureRegion(
                                                   new Texture(
                                                   new FileHandle("images//newword.png"))));
-        readyTexture = new TextureRegionDrawable(
+        TextureRegionDrawable readyTexture =    new TextureRegionDrawable(
                                                   new TextureRegion(
                                                   new Texture(
                                                   new FileHandle("images//ready.png"))));
-        notreadyTexture = new TextureRegionDrawable(
+        TextureRegionDrawable notreadyTexture = new TextureRegionDrawable(
                                                   new TextureRegion(
                                                   new Texture(
-                                                  new FileHandle("images//notready.png"))));
-              
+                                                  new FileHandle("images//notready.png"))));        
+        TextureRegionDrawable restartTexture = new TextureRegionDrawable(
+                                                  new TextureRegion(
+                                                  new Texture(
+                                                  new FileHandle("images//restart.png"))));        
+        
+        newWordButton = new Button();         
         newWordButton.setStyle(new Button.ButtonStyle(newWordTexture, newWordTexture, newWordTexture));
-        newWordButton.setBounds(50, 450, Gdx.graphics.getWidth() - 100, 100);
-        newWordButton.addListener(new newWordListener()); 
-               
-        readyButton.setStyle(new Button.ButtonStyle(notreadyTexture, notreadyTexture, notreadyTexture));
-        readyButton.setBounds(50, 300, Gdx.graphics.getWidth() - 100, 100);
-        readyButton.addListener(new readyListener()); 
+        newWordButton.setBounds(50, 300, Gdx.graphics.getWidth() - 100, 100);        
+        //newWordButton.setBounds(50, 450, Gdx.graphics.getWidth() - 100, 100);
+        newWordButton.addListener(new newWordListener());         
+        gameScreenStage.addActor(newWordButton);        
         
-        gameScreenStage.addActor(newWordButton);
-        gameScreenStage.addActor(readyButton);
+        readyButton = new Button();
+        readyButton.setStyle(new Button.ButtonStyle(notreadyTexture, notreadyTexture, readyTexture));
+        readyButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);
+        readyButton.setDisabled(true);
+        readyButton.addListener(new readyListener());        
+        gameScreenStage.addActor(readyButton);    
         
-        timerAtlas = new TextureAtlas(Gdx.files.internal("animation//timer.atlas")); 
-        timerAnim = new Animation(1 / (timerAtlas.getRegions().size / 10f), timerAtlas.getRegions());   
-        timerActor = new TimerActor(timerAnim);
-        gameScreenStage.addActor(timerActor);
+        restartButton = new Button();
+        restartButton.setStyle(new Button.ButtonStyle(restartTexture, restartTexture, restartTexture));
+        restartButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);
+        restartButton.setDisabled(true);
+        restartButton.addListener(new restartListener()); 
+        
+        difficultyButton = new Button();
+        difficultyButton.setStyle(new Button.ButtonStyle(mediumTexture, mediumTexture, mediumTexture));
+        difficultyButton.setBounds(50, 50, 100, 100);
+        difficultyButton.addListener(new difficultyListener()); 
+        gameScreenStage.addActor(difficultyButton);
+        
+        randomtourButton = new Button();
+        randomtourButton.setStyle(new Button.ButtonStyle(randomTexture, randomTexture, randomTexture));
+        randomtourButton.setBounds(150, 50, 100, 100);
+        randomtourButton.addListener(new randomtourListener()); 
+        gameScreenStage.addActor(randomtourButton);        
+                        
+        TextureAtlas timerAtlas = new TextureAtlas(Gdx.files.internal("animation//timer.atlas")); 
+        Animation timerAnim = new Animation(1 / (timerAtlas.getRegions().size / 10f), timerAtlas.getRegions());   
+        timerActor = new TimerActor(timerAnim);   
+                
+        error = Gdx.audio.newSound(Gdx.files.internal("sounds//error.ogg"));
+        correct = Gdx.audio.newSound(Gdx.files.internal("sounds//correct.ogg"));  
+        click = Gdx.audio.newSound(Gdx.files.internal("sounds//click.ogg"));  
+        
+        //newWordTexture.getRegion().getTexture().dispose();
+        //readyTexture.getRegion().getTexture().dispose();
+        //notreadyTexture.getRegion().getTexture().dispose();
+        //timerAtlas.dispose();                
     }
         
     public void setup() {
         gameScreenStage.clear();
         gameScreenStage.addListener(new gameInputListener());
         gameScreenStage.addActor(newWordButton);
-        gameScreenStage.addActor(readyButton);        
-        word = "";
-        user = "";
-        userLabel.setText("");
-        wordLoaded = false;
-        ready = false;
-        position = 1;        
-        timerActor.reset();
-    }
-    
-    // Get a random word from the wordlist
-    private void selectNewWord() throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader("..\\assets\\words\\wordlist.txt")); 
-        Random rand = new Random();
-        word = "";
-        user = "";
-        
-        int total = Integer.parseInt(br.readLine());
-        int size = rand.nextInt(Integer.parseInt(br.readLine())) + 1;
-                
-        // Traverse the list until you find the word
-        if (size > 0 ) {
-            while (size > 0) {
-                word = br.readLine();
-                String[] token;
-                token = word.split(" ");            
-                int available = Integer.parseInt((token[0]));
-
-                if (available == 1) {
-                    word = token[1];
-                    wordLabel.setText(word);
-                    size--;
-                }
-            }
-        } else {
-            System.out.println("The list is empty, and I should be doing something useful like handling an exception.");
-        }
-                
-        state = new int[word.length()];
-        
-        for (int a = 0; a < state.length; a++) {
-            changeLetterColor(a, CLEAR);
-        }
-    }  
-    
-    // Uses a Fisher-Yates shuffle on an int array, used to build a shuffled map.    
-    private void shuffleLetters() {
-        Random rand = new Random();
-        shuffled = new LinkedHashMap<>();
-        
-        int[] place = new int[word.length()];
-        for (int a = 0; a < place.length; a++) {
-            int r = rand.nextInt(a + 1);
-            place[a] = place[r];
-            place[r] = a;
-        }
-        
-        for (int a = 0; a < place.length; a++) {
-            shuffled.put(place[a], String.valueOf(word.charAt(place[a])));
-        }
-        
-        state[(int) shuffled.keySet().toArray()[0]] = GRAY;
-        state[(int) shuffled.keySet().toArray()[1]] = RED;    
-        
-        user = "";
-        for (int a = 0; a < shuffled.size(); a++) {
-            user += (String) shuffled.values().toArray()[a];
-        }
-                
-        updateUserLabel(); // should be done when "ready" button pressed, will be moved when Screen class built
+        gameScreenStage.addActor(readyButton);  
+        readyButton.setDisabled(true);        
+        TextureRegionDrawable notreadyTexture =   new TextureRegionDrawable(
+                                                  new TextureRegion(
+                                                  new Texture(
+                                                  new FileHandle("images//notready.png"))));
+        readyButton.getStyle().up = notreadyTexture;
+        readyButton.getStyle().down = notreadyTexture;        
+        gameScreenStage.addActor(difficultyButton);   
+        gameScreenStage.addActor(randomtourButton);         
         wordLabel.setText("");
-    }    
-    
-    // Should happen after a player left/right movement
-    private void updateUserLabel() {
-        String updatedLabel = "[GRAY]";
+        userLabel.setText("");
+        ready = false;        
+        timerActor.reset();
+    }     
         
-        int whitey = (int) shuffled.keySet().toArray()[position - 1];
-        
-        for (int a = 0; a < state.length; a++) {
-            if (a == whitey) {
-                updatedLabel += "[WHITE]" + String.valueOf(word.charAt(a)) + "[GRAY]";
-            } else if (state[a] == GRAY) {
-                updatedLabel += String.valueOf(word.charAt(a));
-            }  
-        }
-        
-        // this could probably be pulled out and used for when we know the game is completed
-        if (position == word.length()) {
-            updatedLabel = "[WHITE]" + word;
-        }
-        
-        userLabel.setText(updatedLabel);
-    }
-
-    // Should happen after a player left/right movement
-    private void updateWordLabel() {
-        if (position < word.length()) {
-            wordLabel.setText("[RED]" + String.valueOf(user.charAt(position)));
-        } else {
-            wordLabel.setText(("[WHITE]") + word);
-            ready = false;
-        }
-    }        
-    
-    private void changeLetterColor(int index, int color) {
-        if (color == CLEAR) {
-            state[index] = 0;            
-        }        
-        
-        if (color == GRAY) {
-            state[index] = 1;
-        }
-        
-        if (color == WHITE) {
-            state[index] = 2;
-        }
-        
-        if (color == RED) {
-            state[index] = 3;
-            //position++;
-        }        
-    }    
-    
-    private String buildWord(String in) {
-        String sub = in;
-        String build = "";
-                
-        for (int a = 0; a < in.length(); a++) {
-            if (state[a] == CLEAR) {
-                build += "[CLEAR]" + sub.substring(a, a + 1);
-            }            
-            
-            if (state[a] == WHITE) {
-                build += "[WHITE]" + sub.substring(a, a + 1);
-            }
-                        
-            if (state[a] == GRAY) {
-                build += "[GRAY]" + sub.substring(a, a + 1);
-            }
-            
-            if (state[a] == RED) {
-                build += "[RED]" + sub.substring(a, a + 1);
-            }   
-        }
-        
-        return build;
-    }    
-    
-    private void handleLeft() {                       
-        boolean valid = false;
-        String redLetter = String.valueOf(user.charAt(position)); // Gets the current to-Sort letter
-        int priorIndex = (int) shuffled.keySet().toArray()[position - 1]; // Gets the index of the last placed letter (from the SHUFFLED index)
-        
-        for (int a = priorIndex - 1; a >= 0; a--) {
-            if (redLetter.equals(String.valueOf(word.charAt(a))) && state[a] != GRAY) {
-                valid = true;
-                state[a] = GRAY;
-                correct.play();
-                position++;
-                updateUserLabel();
-                updateWordLabel();                  
-                break;
-            }            
-        }
-        
-        if (!valid) {
-            timerActor.advance();
-            error.play();
-        }              
-    } 
-    
-    private void handleRight() {
-        boolean valid = false;
-        String redLetter = String.valueOf(user.charAt(position)); // Gets the current to-Sort letter
-        int priorIndex = (int) shuffled.keySet().toArray()[position - 1]; // Gets the index of the last placed letter (from the SHUFFLED index)
-
-        for (int a = priorIndex; a < word.length(); a++) {
-            if (redLetter.equals(String.valueOf(word.charAt(a))) && state[a] != GRAY) {
-                valid = true;
-                state[a] = GRAY;
-                correct.play();
-                position++;
-                updateUserLabel();
-                updateWordLabel();                
-                break;
-            }            
-        }
-        
-        if (!valid) {
-            timerActor.advance();
-            error.play();
-        }        
-    }    
-    
     private class newWordListener extends ClickListener {
         @Override
         public void clicked(InputEvent event, float x, float y) {
-            newWordButton.remove();
+            click.play();            
+            
             gameScreenStage.addActor(wordLabel);
-            readyButton.getStyle().up = (TextureRegionDrawable) readyTexture;
-            readyButton.getStyle().down = (TextureRegionDrawable) readyTexture;
-            readyButton.getStyle().checked = (TextureRegionDrawable) readyTexture;
+            readyButton.setDisabled(false);
+            readyButton.getStyle().up = readyButton.getStyle().checked;
+            readyButton.getStyle().down = readyButton.getStyle().checked;     
             
             try {
-                selectNewWord();
+                String word = handler.selectNewWord();                
+                wordLabel.setText(word);
             } catch (IOException ex) {
                 Logger.getLogger(Ephelant.class.getName()).log(Level.SEVERE, null, ex);
-            }     
-            
-            wordLoaded = true;
+            }                 
         }
-    }
+    } 
     
     private class readyListener extends ClickListener {
         @Override
         public void clicked(InputEvent event, float x, float y) {
-            if (wordLoaded) {
-                readyButton.remove();
-                gameScreenStage.addActor(userLabel);
-                gameScreenStage.addActor(timerActor);                
-                timerActor.runTimer = true;
-                
-                shuffleLetters();
-                updateWordLabel();        
-                ready = true;    
-            }
+            click.play();            
+            
+            newWordButton.remove();
+            readyButton.remove();
+            gameScreenStage.addActor(restartButton);
+            gameScreenStage.addActor(userLabel);
+            gameScreenStage.addActor(timerActor);                
+            timerActor.runTimer(); 
+            
+            setTimer(handler.getWord());
+               
+            wordLabel.setText(handler.updateWordLabel());
+            userLabel.setText(handler.updateUserLabel());
+            ready = true;    
+        }
+    }
+        
+    private class restartListener extends ClickListener {
+        @Override
+        public void clicked(InputEvent event, float x, float y) {
+            click.play();            
+            
+            gameScreenStage.addActor(newWordButton);
+            gameScreenStage.addActor(readyButton);           
+            timerActor.reset();    
+            timerActor.remove();            
+            handler.restart();        
+            String word = handler.restart();
+            wordLabel.setText(word);  
+            ready = true;            
+        }   
+    }
+    
+    private void setTimer(String word) {
+        int time = DIFFICULTY;
+        int length = word.length();                
+        switch (time) {
+            case EASY:
+                System.out.println("easy");
+                timerActor.setTimerLength((float) (length + (length * .25))); // needs to get larger                  
+                break;
+            case MEDIUM:
+                timerActor.setTimerLength((float) length);
+                break;
+            case HARD:
+                timerActor.setTimerLength((float) (length - (length * .25))); // needs to get smaller
+                break;
         }        
+    }
+    
+    private class difficultyListener extends ClickListener {
+        @Override
+        public void clicked(InputEvent event, float x, float y) {
+            click.play();
+            
+            DIFFICULTY++;
+            
+            if (DIFFICULTY > 2) {
+                DIFFICULTY = 0;
+            }
+                        
+            switch (DIFFICULTY) {
+                case 0:
+                    difficultyButton.getStyle().up = easyTexture;
+                    difficultyButton.getStyle().down = easyTexture;
+                    difficultyButton.getStyle().checked = easyTexture;                    
+                    break;
+                case 1:
+                    difficultyButton.getStyle().up = mediumTexture;
+                    difficultyButton.getStyle().down = mediumTexture;
+                    difficultyButton.getStyle().checked = mediumTexture;                     
+                    break;
+                case 2:
+                    difficultyButton.getStyle().up = hardTexture;
+                    difficultyButton.getStyle().down = hardTexture;
+                    difficultyButton.getStyle().checked = hardTexture;                     
+                    break;
+            }            
+        }   
+    } 
+    
+    private class randomtourListener extends ClickListener {
+        @Override
+        public void clicked(InputEvent event, float x, float y) {
+            click.play();
+            
+            RANDOMTOUR++;
+            
+            if (RANDOMTOUR > 1) {
+                RANDOMTOUR = 0;
+            }
+            
+            switch (RANDOMTOUR) {
+                case 0:
+                    randomtourButton.getStyle().up = randomTexture;
+                    randomtourButton.getStyle().down = randomTexture;
+                    randomtourButton.getStyle().checked = randomTexture;                    
+                    break;
+                case 1:
+                    randomtourButton.getStyle().up = tourTexture;
+                    randomtourButton.getStyle().down = tourTexture;
+                    randomtourButton.getStyle().checked = tourTexture;                     
+                    break;
+            }            
+        }   
+    }    
+
+    public void checkEndConditions() {  
+        if (ready) {
+            if (timerActor.isDone() || handler.isComplete()) {
+                ready = false;     
+                timerActor.remove();
+                
+                // At this point I have to figure out all the logic associated with ending the game
+                // Adding a restart button, making things appear/disappear
+            }            
+        }
     }
     
     private class gameInputListener extends InputListener {
@@ -384,39 +341,33 @@ public class GameScreen {
                     exitGame = true;                                        
                     break;
                 case Input.Keys.LEFT:
-                    if (ready) { handleLeft(); }
+                case Input.Keys.A:
+                    if (ready) { 
+                        if (handler.handleLeft()) {
+                            correct.play();
+                            wordLabel.setText(handler.updateWordLabel());
+                            userLabel.setText(handler.updateUserLabel());
+                        } else {
+                            error.play();
+                            timerActor.advance();
+                        }                    
+                    }
                     break;
                 case Input.Keys.RIGHT:
-                    if (ready) { handleRight(); }
-                    break;
-                case Input.Keys.SPACE:
-                    if (wordLoaded && !ready) {
-                        readyButton.remove();
-                        gameScreenStage.addActor(userLabel);                        
-                        
-                        shuffleLetters();
-                        updateWordLabel();        
-                        ready = true;
-                    }                    
-                    
-                    if (!wordLoaded) {
-                        newWordButton.remove();
-                        gameScreenStage.addActor(wordLabel);
-                        readyButton.getStyle().up = (TextureRegionDrawable) readyTexture;
-                        readyButton.getStyle().down = (TextureRegionDrawable) readyTexture;
-                        readyButton.getStyle().checked = (TextureRegionDrawable) readyTexture;                        
-                        
-                        try {
-                            selectNewWord();
-                        } catch (IOException ex) {
-                            Logger.getLogger(Ephelant.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                        
-                        wordLoaded = true;
-                    }                    
+                case Input.Keys.D:
+                    if (ready) {
+                        if (handler.handleRight()) {
+                            correct.play();
+                            wordLabel.setText(handler.updateWordLabel());
+                            userLabel.setText(handler.updateUserLabel());
+                        } else {
+                            error.play();
+                            timerActor.advance();
+                        }                    
+                    }
                     break;
             }
             return true;
         }        
-    }    
+    }
 }

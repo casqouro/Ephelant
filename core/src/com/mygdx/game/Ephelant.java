@@ -17,12 +17,9 @@ public class Ephelant extends ApplicationAdapter {
     private StartScreen startScreen;
     private GameScreen gameScreen;   
     
-    private Texture background;            
+    private Texture background;      
       
-    /* THINGS TO DO   
-        SCREENS
-            2.  GameScreen class (WORK)
-    
+    /* THINGS TO DO       
         BUGS
     
             1.  Handle relative positions!  Roundabout has two U's.  The user
@@ -32,7 +29,18 @@ public class Ephelant extends ApplicationAdapter {
                 When a letter is selected I could probably troll the remaining
                 unplaced letters and add ALL letters of a type to an array.
                 Then I could execute the logic for each one until yes/no.
-    */     
+    
+            2.  ReadyButton is working on initial gameScreen, causing a crash.
+            3.  Rare bug with extra letters appearing.
+    
+        FEATURES
+    
+            1.  Pressing 'ESC' should pause everything + ask yes/no to quit.
+            2.  Display locations need to be relative rather than hardcoded.
+            3.  Add teasing labels when user fails.
+            4.  Condense the New Word and Restart buttons?
+            5.  Fix it so that difficulty can be changed when restarting word
+*/
     
     @Override
     public void create() {
@@ -44,7 +52,7 @@ public class Ephelant extends ApplicationAdapter {
         camera.update();                                                   
         
         startScreen = new StartScreen();   
-        gameScreen = new GameScreen();               
+        gameScreen = new GameScreen();  
     }
                                      
     @Override
@@ -52,38 +60,40 @@ public class Ephelant extends ApplicationAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);                        
         batch.setProjectionMatrix(camera.combined);
         
-        if (screen == MENU) {
+        if (screen == MENU) {                     
             Gdx.input.setInputProcessor(startScreen.startScreenStage);
             batch.begin();
             batch.draw(background, 0, 0);
             batch.end();
             startScreen.startScreenStage.act();
-            startScreen.startScreenStage.draw();
+            startScreen.startScreenStage.draw();            
             
             if (startScreen.startGame) {
                 screen = GAME;
                 gameScreen.exitGame = false;
-            }
+            } 
         }
         
         if (screen == GAME) {
             Gdx.input.setInputProcessor(gameScreen.gameScreenStage); 
-            
-            if (!gameScreen.setupCalled) {
-                gameScreen.setup();
-                gameScreen.setupCalled = true;
-            }                      
-            batch.begin();
-            batch.end();            
-            
-            gameScreen.gameScreenStage.draw();            
-            gameScreen.gameScreenStage.act();                                    
             
             if (gameScreen.exitGame) {
                 screen = MENU;
                 startScreen.startGame = false;
                 gameScreen.setupCalled = false;
             }            
+            
+            if (!gameScreen.setupCalled) {
+                gameScreen.setup();
+                gameScreen.setupCalled = true;
+            } 
+            
+            batch.begin();
+            batch.end();            
+            
+            gameScreen.checkEndConditions();
+            gameScreen.gameScreenStage.draw();            
+            gameScreen.gameScreenStage.act();                                                 
         }
     }
     

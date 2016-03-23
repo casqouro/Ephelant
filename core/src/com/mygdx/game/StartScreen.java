@@ -1,6 +1,7 @@
 package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
@@ -16,12 +17,6 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 
-/* ToDo:
-
-    1.  Display locations need to be relative rather than hardcoded.  Hardcoded
-        is just easier for initial setup.
-*/
-
 public class StartScreen {
     protected Stage startScreenStage;
         
@@ -30,6 +25,8 @@ public class StartScreen {
     private final Button play;
     private final Button settings;
     private final Button about;
+    
+    private final Sound click;
     
     public boolean startGame = false;
     
@@ -76,6 +73,8 @@ public class StartScreen {
         about.setStyle(new ButtonStyle(aboutButtonTexture, aboutButtonTexture, aboutButtonTexture));
         about.setBounds(225, 15, 150, 150);
         about.addListener(new aboutListener());
+        
+        click = Gdx.audio.newSound(Gdx.files.internal("sounds//click.ogg"));        
                 
         startScreenStage.addActor(title);
         startScreenStage.addActor(play);
@@ -86,6 +85,8 @@ public class StartScreen {
         private class playListener extends ClickListener {    
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                click.play();
+                
                 startGame = true;
             }
         }
@@ -93,6 +94,8 @@ public class StartScreen {
         private class settingsListener extends ClickListener {    
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                click.play();
+                
                 System.out.println("Not yet implemented");
             }
         }        
@@ -100,6 +103,8 @@ public class StartScreen {
         private class aboutListener extends ClickListener {    
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                click.play();
+                
                 System.out.println("Created, slowly, by Matthew Frank");
             }
         }
