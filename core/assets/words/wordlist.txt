@@ -1,9 +1,19 @@
-7
-7
-1 elephant
-1 whisper
-1 roundabout
-1 wonderful
-1 gullible
-1 coruscant
-1 acumen
+2
+2
+2
+2
+2
+2
+-1
+acorn
+berry
+acumen
+brutal
+whisper
+pitiful
+elephant
+gullible
+coruscant
+wonderful
+aggressive
+roundabout

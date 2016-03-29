@@ -18,35 +18,67 @@ public class WordHandler {
     private static final int WHITE = 2;
     private static final int RED = 3;    
     private int position = 1;
-       
+           
     // Return a random word from the wordlist
-    public String selectNewWord() throws IOException {
+    public String selectNewWord(int NUMBER, int MINUSPLUS) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader("..\\assets\\words\\wordlist.txt")); 
         Random rand = new Random();
         word = "";
         user = "";
         position = 1;
         
-        int total = Integer.parseInt(br.readLine());
-        int size = rand.nextInt(Integer.parseInt(br.readLine())) + 1;
-                
-        // Traverse the list until you find the word
-        if (size > 0 ) {
+        int groupingSize = 0;
+        
+        if (MINUSPLUS == 0) { // If set to '-'
+            int sentinel = NUMBER;
+            while (sentinel >= 5) {
+                groupingSize += Integer.valueOf(br.readLine()); // size of random group to choose from
+                sentinel--;
+            }
+            
+            while (sentinel != -1) {
+                sentinel = Integer.valueOf(br.readLine());
+            }
+            
+            int size = rand.nextInt(groupingSize) + 1;
+            
             while (size > 0) {
                 word = br.readLine();
-                String[] token;
-                token = word.split(" ");            
-                int available = Integer.parseInt((token[0]));
-
-                if (available == 1) {
-                    word = token[1];
-                    size--;
-                }
+                size--;
             }
-        } else {
-            System.out.println("The list is empty, and I should be doing something useful like handling an exception.");
+            
+            //return word;
         }
-                
+        
+        if (MINUSPLUS == 1) { // If set to '+'
+            int sentinel = 5;
+            int skipSize = 0;
+            
+            while (sentinel < NUMBER) {
+                skipSize += Integer.valueOf(br.readLine()); // check how far down to skip into the word list
+                sentinel++;
+            }           
+            
+            while (sentinel <= 10) {
+                groupingSize += Integer.valueOf(br.readLine()); // size of random group to choose from
+                sentinel++;
+            }
+            
+            while (skipSize + 1 > 0) { // skip down into the word list
+                br.readLine();
+                skipSize--;
+            }
+                        
+            int size = rand.nextInt(groupingSize) + 1;
+            
+            while (size > 0) { // find your random word in the later grouping
+                word = br.readLine();
+                size--;
+            }
+                        
+            //return word;
+        }        
+                 
         state = new int[word.length()];
         
         for (int a = 0; a < state.length; a++) {
@@ -100,16 +132,17 @@ public class WordHandler {
             user += (String) shuffled.values().toArray()[a];
         }
                 
-        updateUserLabel(); // should be done when "ready" button pressed, will be moved when Screen class built
-        //wordLabel.setText(""); // used to empty out the wordLabel
+        updateUserLabel();
     }    
         
     // Should happen after a player left/right movement
     public String updateWordLabel() {
+        
+        System.out.println(user);
         if (position < word.length()) {
             return "[RED]" + String.valueOf(user.charAt(position));
         } 
-        
+  
         return "[WHITE]" + word;
     }    
     

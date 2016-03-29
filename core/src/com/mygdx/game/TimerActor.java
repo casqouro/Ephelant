@@ -40,19 +40,7 @@ public class TimerActor extends Actor {
     }
     
     public void setTimerLength(float frameDuration) {
-        // lowering it makes it faster
-        // smaller words take less time
-        
-        // raising it makes it slower
-        // bigger words take more time
-        
-        // higher difficulty takes less time, so it needs to be lower
-        // lower difficulty takes more time, so it needs to be higher
-       
-        float duration = (1 / (anim.getKeyFrames().length / frameDuration));
-        
-        System.out.println(frameDuration);
-        anim.setFrameDuration(duration);
+        anim.setFrameDuration(1 / (anim.getKeyFrames().length / frameDuration));
     }
     
     @Override

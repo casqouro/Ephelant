@@ -17,12 +17,12 @@ public class Ephelant extends ApplicationAdapter {
     private StartScreen startScreen;
     private GameScreen gameScreen;   
     
-    private Texture background;      
-      
+    private Texture background; 
+         
     /* THINGS TO DO       
         BUGS
     
-            1.  Handle relative positions!  Roundabout has two U's.  The user
+            2.  Handle relative positions!  Roundabout has two U's.  The user
                 doesn't know which one I'm using.  The first U does NOT have a
                 'd' to its left, but the second U DOES have a 'd' to its left.
     
@@ -30,16 +30,20 @@ public class Ephelant extends ApplicationAdapter {
                 unplaced letters and add ALL letters of a type to an array.
                 Then I could execute the logic for each one until yes/no.
     
-            2.  ReadyButton is working on initial gameScreen, causing a crash.
+                [UPDATE] - more complex than I thought and perhaps even
+                unfixable with the current design.
+    
             3.  Rare bug with extra letters appearing.
+                
+                [UPDATE] - this is related to the relative positions bug.
+                If you have "Pitiful", you have p-i-i.  When determining what
+                color to mark letters the FOR loop will mark both of them.    
     
         FEATURES
     
             1.  Pressing 'ESC' should pause everything + ask yes/no to quit.
             2.  Display locations need to be relative rather than hardcoded.
             3.  Add teasing labels when user fails.
-            4.  Condense the New Word and Restart buttons?
-            5.  Fix it so that difficulty can be changed when restarting word
 */
     
     @Override
@@ -52,7 +56,7 @@ public class Ephelant extends ApplicationAdapter {
         camera.update();                                                   
         
         startScreen = new StartScreen();   
-        gameScreen = new GameScreen();  
+        gameScreen = new GameScreen();       
     }
                                      
     @Override
@@ -83,17 +87,15 @@ public class Ephelant extends ApplicationAdapter {
                 gameScreen.setupCalled = false;
             }            
             
-            if (!gameScreen.setupCalled) {
+            if (startScreen.startGame && !gameScreen.setupCalled) {
                 gameScreen.setup();
                 gameScreen.setupCalled = true;
-            } 
+            }                        
             
-            batch.begin();
-            batch.end();            
-            
+            gameScreen.isOver();
             gameScreen.checkEndConditions();
-            gameScreen.gameScreenStage.draw();            
-            gameScreen.gameScreenStage.act();                                                 
+            gameScreen.gameScreenStage.act();             
+            gameScreen.gameScreenStage.draw();                                                            
         }
     }
     
@@ -108,4 +110,3 @@ public class Ephelant extends ApplicationAdapter {
 // could even award points for speed - faster you go, bigger anim, more points
 // the letter should pulsate
 // the letter should pulsate faster and brighter with less remaining time
-// at higher levels you have much less time
