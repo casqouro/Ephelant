@@ -3,6 +3,7 @@ package com.mygdx.game;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
@@ -15,8 +16,7 @@ public class WordHandler {
 
     private static final int CLEAR = 0;
     private static final int GRAY = 1;
-    private static final int WHITE = 2;
-    private static final int RED = 3;    
+    private static final int WHITE = 2;   
     private int position = 1;
            
     // Return a random word from the wordlist
@@ -82,32 +82,14 @@ public class WordHandler {
         state = new int[word.length()];
         
         for (int a = 0; a < state.length; a++) {
-            changeLetterColor(a, CLEAR);
+            state[a] = CLEAR;
         }
         
         shuffleLetters();
         
         return word;
     }         
-    
-    private void changeLetterColor(int index, int color) {
-        if (color == CLEAR) {
-            state[index] = 0;            
-        }        
         
-        if (color == GRAY) {
-            state[index] = 1;
-        }
-        
-        if (color == WHITE) {
-            state[index] = 2;
-        }
-        
-        if (color == RED) {
-            state[index] = 3;
-        }        
-    } 
-    
     // Uses a Fisher-Yates shuffle on an int array, used to build a shuffled map.    
     private void shuffleLetters() {
         Random rand = new Random();
@@ -124,8 +106,7 @@ public class WordHandler {
             shuffled.put(place[a], String.valueOf(word.charAt(place[a])));
         }
         
-        state[(int) shuffled.keySet().toArray()[0]] = GRAY;
-        state[(int) shuffled.keySet().toArray()[1]] = RED;    
+        state[(int) shuffled.keySet().toArray()[0]] = WHITE;  
         
         user = "";
         for (int a = 0; a < shuffled.size(); a++) {
@@ -137,8 +118,6 @@ public class WordHandler {
         
     // Should happen after a player left/right movement
     public String updateWordLabel() {
-        
-        System.out.println(user);
         if (position < word.length()) {
             return "[RED]" + String.valueOf(user.charAt(position));
         } 
@@ -148,18 +127,19 @@ public class WordHandler {
     
     // Should happen after a player left/right movement
     public String updateUserLabel() {
-        String updatedLabel = "[GRAY]";
-        
-        int whitey = (int) shuffled.keySet().toArray()[position - 1];
-        
-        for (int a = 0; a < state.length; a++) {
-            if (a == whitey) {
-                updatedLabel += "[WHITE]" + String.valueOf(word.charAt(a)) + "[GRAY]";
-            } else if (state[a] == GRAY) {
-                updatedLabel += String.valueOf(word.charAt(a));
-            }  
-        }
-        
+        String updatedLabel = "";
+                
+        for (int a = 0; a < state.length; a++) { 
+            if (state[a] == WHITE) {
+                updatedLabel += "[WHITE]" + String.valueOf(word.charAt(a));
+            } 
+            
+            if (state[a] == GRAY) {
+                updatedLabel += "[GRAY]" + String.valueOf(word.charAt(a));
+            }     
+            System.out.println("During: " + updatedLabel);            
+        }              
+
         if (position == word.length()) {
             updatedLabel = "[WHITE]" + word;
         }
@@ -174,13 +154,18 @@ public class WordHandler {
     public Boolean handleLeft() {                       
         String redLetter = String.valueOf(user.charAt(position)); // Gets the current to-Sort letter
         int priorIndex = (int) shuffled.keySet().toArray()[position - 1]; // Gets the index of the last placed letter (from the SHUFFLED index)
-        
-        for (int a = priorIndex - 1; a >= 0; a--) {
-            if (redLetter.equals(String.valueOf(word.charAt(a))) && state[a] != GRAY) {
-                state[a] = GRAY;
+               
+        for (int a = priorIndex - 1; a >= 0; a--) {          
+            if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) { 
+                System.out.println(a + " " + (int) shuffled.keySet().toArray()[position]);                
+                state[(int) shuffled.keySet().toArray()[position]] = WHITE;                
+                state[priorIndex] = GRAY;
+                
+                for (int b = 0; b < state.length; b++) {
+                    System.out.print(state[b] + " ");
+                } System.out.println();                
+                
                 position++;
-                updateUserLabel();
-                updateWordLabel(); 
                 return true;
             }            
         }
@@ -192,12 +177,36 @@ public class WordHandler {
         String redLetter = String.valueOf(user.charAt(position)); // Gets the current to-Sort letter
         int priorIndex = (int) shuffled.keySet().toArray()[position - 1]; // Gets the index of the last placed letter (from the SHUFFLED index)
 
-        for (int a = priorIndex; a < word.length(); a++) {
-            if (redLetter.equals(String.valueOf(word.charAt(a))) && state[a] != GRAY) {
-                state[a] = GRAY;
+        /*
+        int num = 0;
+        char check = user.charAt(position - 1);     // Get the character being sorted against
+        for (int a = 0; a < word.length(); a++) {
+            if (check == word.charAt(a)) {
+                num++;                              // Find out how many equal characters exist
+            }
+        }
+        
+        int[] positions = new int[num];
+        int pos = 0;
+        for (int a = 0; a < word.length(); a++) {
+            if (check == word.charAt(a)) {
+                positions[pos] = a;                 // Store their positions so each can be checked
+                pos++;
+            }
+        }
+        */
+                
+        for (int a = priorIndex; a < word.length(); a++) {             
+            if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) {  
+                System.out.println(a + " " + (int) shuffled.keySet().toArray()[position]);
+                state[(int) shuffled.keySet().toArray()[position]] = WHITE;
+                state[priorIndex] = GRAY;
+                
+                for (int b = 0; b < state.length; b++) {
+                    System.out.print(state[b] + " ");
+                } System.out.println();                
+                
                 position++;
-                updateUserLabel();
-                updateWordLabel();                
                 return true;
             }            
         }
@@ -216,7 +225,7 @@ public class WordHandler {
         state = new int[word.length()];
         
         for (int a = 0; a < state.length; a++) {
-            changeLetterColor(a, CLEAR);
+            state[a] = CLEAR;
         }
         
         shuffleLetters();

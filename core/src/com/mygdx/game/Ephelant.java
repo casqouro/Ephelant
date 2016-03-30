@@ -31,13 +31,7 @@ public class Ephelant extends ApplicationAdapter {
                 Then I could execute the logic for each one until yes/no.
     
                 [UPDATE] - more complex than I thought and perhaps even
-                unfixable with the current design.
-    
-            3.  Rare bug with extra letters appearing.
-                
-                [UPDATE] - this is related to the relative positions bug.
-                If you have "Pitiful", you have p-i-i.  When determining what
-                color to mark letters the FOR loop will mark both of them.    
+                unfixable with the current design.       
     
         FEATURES
     

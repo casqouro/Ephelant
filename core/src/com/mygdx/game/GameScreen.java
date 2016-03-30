@@ -240,7 +240,6 @@ public class GameScreen {
         readyButton.getStyle().up = notreadyTexture;
         readyButton.getStyle().down = notreadyTexture; 
         gameScreenStage.addActor(difficultyButton);   
-        //gameScreenStage.addActor(randomtourButton);
         gameScreenStage.addActor(minusplusButton);
         gameScreenStage.addActor(numbersButton);
         wordLabel.setText("");
@@ -259,9 +258,8 @@ public class GameScreen {
             readyButton.getStyle().down = readyButton.getStyle().checked;   
             readyButton.setDisabled(false);
             
-            try {
-                String word = handler.selectNewWord(NUMBER, MINUSPLUS);                
-                wordLabel.setText(word);
+            try {             
+                wordLabel.setText(handler.selectNewWord(NUMBER, MINUSPLUS)); 
             } catch (IOException ex) {
                 Logger.getLogger(Ephelant.class.getName()).log(Level.SEVERE, null, ex);
             }                 
@@ -553,6 +551,15 @@ public class GameScreen {
                     minusplusButton.getStyle().up = minusTexture;
                     minusplusButton.getStyle().down = minusTexture;
                     minusplusButton.getStyle().checked = minusTexture;                    
+                    
+                    if (handler.getWord().length() > NUMBER) {
+                        try {
+                            wordLabel.setText(handler.selectNewWord(NUMBER, MINUSPLUS));
+                        } catch (IOException ex) {
+                            Logger.getLogger(GameScreen.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                    
                     break;
                 case PLUS:
                     minusplusButton.getStyle().up = plusTexture;
