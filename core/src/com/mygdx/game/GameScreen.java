@@ -45,6 +45,7 @@ public class GameScreen {
     private final Button numbersButton;
     
     // as cool as this is, it's wastey on spacey...
+    private int LANG = 0;
     private int DIFFICULTY = 1;
     private final int EASY = 0;
     private final int MEDIUM = 1;
@@ -66,71 +67,58 @@ public class GameScreen {
     private boolean ready = false;
     public boolean exitGame = false;
     public boolean setupCalled = false;    
-    
-    TextureRegionDrawable easyTexture =     new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//easy.png"))));  
+        
+    TextureRegionDrawable easyTexture = new TextureRegionDrawable(
+                                        new TextureRegion( 
+                                        new Texture(Gdx.files.internal("images/easy.png"))));
     
     TextureRegionDrawable mediumTexture =   new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//medium.png"))));
+                                            new TextureRegion( 
+                                            new Texture(Gdx.files.internal("images/medium.png"))));
 
     TextureRegionDrawable hardTexture =     new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//hard.png"))));
+                                            new TextureRegion( 
+                                            new Texture(Gdx.files.internal("images/hard.png"))));
     
     TextureRegionDrawable randomTexture =   new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//random.png"))));
+                                            new Texture(Gdx.files.internal("images/random.png"))));
 
     TextureRegionDrawable tourTexture =     new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//tour.png"))));
+                                            new Texture(Gdx.files.internal("images/tour.png"))));
     
     TextureRegionDrawable number5 =         new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//number5.png"))));
+                                            new Texture(Gdx.files.internal("images/number5.png"))));
 
     TextureRegionDrawable number6 =         new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//number6.png"))));
+                                            new Texture(Gdx.files.internal("images/number6.png"))));
         
     TextureRegionDrawable number7 =         new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//number7.png"))));
+                                            new Texture(Gdx.files.internal("images/number7.png"))));
 
     TextureRegionDrawable number8 =         new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//number8.png"))));
+                                            new Texture(Gdx.files.internal("images/number8.png"))));
 
     TextureRegionDrawable number9 =         new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//number9.png"))));
+                                            new Texture(Gdx.files.internal("images/number9.png"))));
 
     TextureRegionDrawable number10 =        new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//number10.png"))));
+                                            new Texture(Gdx.files.internal("images/number10.png"))));
     
     TextureRegionDrawable minusTexture =    new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//minus.png"))));
+                                            new Texture(Gdx.files.internal("images/minus.png"))));
 
     TextureRegionDrawable plusTexture =     new TextureRegionDrawable(
                                             new TextureRegion(
-                                            new Texture(
-                                            new FileHandle("images//plus.png"))));
+                                            new Texture(Gdx.files.internal("images/plus.png"))));
     
     public GameScreen() {
         gameScreenStage = new Stage();
@@ -147,7 +135,7 @@ public class GameScreen {
         
         // Sets the label fonts and locations
         Label.LabelStyle fontStyle = new Label.LabelStyle(font, Color.WHITE);
-        fontStyle.background = new TextureRegionDrawable(new TextureRegion(new Texture(new FileHandle("images//black.png"))));
+        fontStyle.background = new TextureRegionDrawable(new TextureRegion(new Texture(Gdx.files.internal("images/black.png"))));
         wordLabel = new Label("...", fontStyle);
         wordLabel.setBounds(0, 400, Gdx.graphics.getWidth(), 200);
         wordLabel.setWrap(true);        
@@ -161,21 +149,17 @@ public class GameScreen {
         detailLabel.setWrap(true);
           
         TextureRegionDrawable newWordTexture =  new TextureRegionDrawable(
-                                                  new TextureRegion(
-                                                  new Texture(
-                                                  new FileHandle("images//newword.png"))));
+                                                new TextureRegion(
+                                                new Texture(Gdx.files.internal("images/newword.png"))));       
         TextureRegionDrawable readyTexture =    new TextureRegionDrawable(
-                                                  new TextureRegion(
-                                                  new Texture(
-                                                  new FileHandle("images//ready.png"))));
+                                                new TextureRegion(
+                                                new Texture(Gdx.files.internal("images/ready.png"))));
         TextureRegionDrawable notreadyTexture = new TextureRegionDrawable(
-                                                  new TextureRegion(
-                                                  new Texture(
-                                                  new FileHandle("images//notready.png"))));        
-        TextureRegionDrawable restartTexture = new TextureRegionDrawable(
-                                                  new TextureRegion(
-                                                  new Texture(
-                                                  new FileHandle("images//restart.png"))));        
+                                                new TextureRegion(
+                                                new Texture(Gdx.files.internal("images/notready.png"))));       
+        TextureRegionDrawable restartTexture =  new TextureRegionDrawable(
+                                                new TextureRegion(
+                                                new Texture(Gdx.files.internal("images/restart.png"))));       
         
         newWordButton = new Button();         
         newWordButton.setStyle(new Button.ButtonStyle(newWordTexture, newWordTexture, newWordTexture));
@@ -235,8 +219,7 @@ public class GameScreen {
         readyButton.setDisabled(true);
         TextureRegionDrawable notreadyTexture =   new TextureRegionDrawable(
                                                   new TextureRegion(
-                                                  new Texture(
-                                                  new FileHandle("images//notready.png"))));                
+                                                  new Texture(Gdx.files.internal("images/notready.png"))));                
         readyButton.getStyle().up = notreadyTexture;
         readyButton.getStyle().down = notreadyTexture; 
         gameScreenStage.addActor(difficultyButton);   
@@ -301,7 +284,7 @@ public class GameScreen {
             handler.restart();        
             String word = handler.restart();
             wordLabel.setText(word);  
-            ready = true;            
+            ready = false;            
         }   
     }
     
@@ -332,8 +315,8 @@ public class GameScreen {
     public void checkEndConditions() {  
         if (ready) {
             if (timerActor.isDone() || handler.isComplete()) {
-                ready = false;     
-                timerActor.remove();
+                ready = false;    
+                //timerActor.stopTimer();
             }            
         }
     }    
@@ -622,5 +605,10 @@ public class GameScreen {
             }
             return true;
         }        
+    }
+    
+    public void setLang(int a) {
+        LANG = a;
+        handler.setLang(LANG);
     }
 }

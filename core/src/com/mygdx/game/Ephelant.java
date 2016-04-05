@@ -5,13 +5,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch; 
 
 public class Ephelant extends ApplicationAdapter {
     private OrthographicCamera camera;
     private SpriteBatch batch;   
     
     private int screen = 0;
+    private int LANG = 0;
     private static final int MENU = 0;
     private static final int GAME = 1;
     private StartScreen startScreen;
@@ -19,25 +20,59 @@ public class Ephelant extends ApplicationAdapter {
     
     private Texture background; 
          
-    /* THINGS TO DO       
-        BUGS
-    
-            2.  Handle relative positions!  Roundabout has two U's.  The user
-                doesn't know which one I'm using.  The first U does NOT have a
-                'd' to its left, but the second U DOES have a 'd' to its left.
-    
-                When a letter is selected I could probably troll the remaining
-                unplaced letters and add ALL letters of a type to an array.
-                Then I could execute the logic for each one until yes/no.
-    
-                [UPDATE] - more complex than I thought and perhaps even
-                unfixable with the current design.       
-    
+    /* THINGS TO DO    
         FEATURES
     
-            1.  Pressing 'ESC' should pause everything + ask yes/no to quit.
-            2.  Display locations need to be relative rather than hardcoded.
-            3.  Add teasing labels when user fails.
+        1.  Pressing 'ESC' should pause everything + ask yes/no to quit.
+    
+        2.  Display locations need to be relative rather than hardcoded.
+    
+        3.  Add teasing labels when user fails.   
+    
+        4.  Make multi-language support more robust by adding assets so buttons
+            can reflect language choices.
+    
+        BUGS
+        
+        1.  Timer: the timer needs to be removed before pasting a completed
+                   word to wordLabel, otherwise it overlaps obviously.
+    
+        2.  Timer: the timer does not stop when a word has been successfully
+                   completed.
+    
+        3.  Relative positions: when duplicate characters exist a number of
+                                issues crop up.
+    
+                                (A) Left and Right can both be valid answers.
+                                    Ex: "ROUNDABOUT" has two 'U' characters.
+                                        The 'D' character is both to the left of
+                                        a 'U' and to the right of a 'U'.
+    
+                                (B) Trying to solve (A) by adding the letters to
+                                    an array brings up the issue of 'identity'.
+                                    If neighboring letters have been placed,
+                                    then a duplicate letter may be 'identified'
+                                    and is no longer really a duplicate.  This
+                                    issue can even extend to groups, like the
+                                    two 'OU' groups in "ROUNDABOUT".
+    
+                                    However, I think identity can be solved by
+                                    checking if any letters between duplicates
+                                    has been placed.  If so, then both letters
+                                    are identifiable (excepting cases like 'UO'
+                                    in "ROUNDABOUT", of which there are two.
+    
+                                (C) Sometimes pressing LEFT will highlight a
+                                    character to the right, and vice versa.
+    
+                                    This only happens when attempting to solve
+                                    the duplicates issue.
+    
+                                CONCLUSION: don't use any words with duplicate
+                                            characters
+    
+                                            I'd love to solve this programming
+                                            challenge but I have limited time.    
 */
     
     @Override
@@ -49,8 +84,8 @@ public class Ephelant extends ApplicationAdapter {
         camera.position.set(camera.viewportWidth * 0.5f, camera.viewportHeight * 0.5f, 0);
         camera.update();                                                   
         
-        startScreen = new StartScreen();   
-        gameScreen = new GameScreen();       
+        gameScreen = new GameScreen();        
+        startScreen = new StartScreen(gameScreen);          
     }
                                      
     @Override
@@ -64,7 +99,7 @@ public class Ephelant extends ApplicationAdapter {
             batch.draw(background, 0, 0);
             batch.end();
             startScreen.startScreenStage.act();
-            startScreen.startScreenStage.draw();            
+            startScreen.startScreenStage.draw();    
             
             if (startScreen.startGame) {
                 screen = GAME;

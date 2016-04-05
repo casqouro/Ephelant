@@ -1,9 +1,12 @@
 package com.mygdx.game;
 
+import com.badlogic.gdx.Files;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
@@ -17,11 +20,24 @@ public class WordHandler {
     private static final int CLEAR = 0;
     private static final int GRAY = 1;
     private static final int WHITE = 2;   
+    private int LANG = 0;
     private int position = 1;
            
     // Return a random word from the wordlist
     public String selectNewWord(int NUMBER, int MINUSPLUS) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader("..\\assets\\words\\wordlist.txt")); 
+        String wordList = "";
+        switch (LANG) {
+            case 0:
+                wordList = "en";
+                break;
+            case 1:
+                wordList = "pt";
+                break;
+        }
+        
+        FileHandle words = Gdx.files.internal("words\\" + wordList + ".txt");
+        BufferedReader br = new BufferedReader(words.reader()); 
+        
         Random rand = new Random();
         word = "";
         user = "";
@@ -46,8 +62,6 @@ public class WordHandler {
                 word = br.readLine();
                 size--;
             }
-            
-            //return word;
         }
         
         if (MINUSPLUS == 1) { // If set to '+'
@@ -72,11 +86,9 @@ public class WordHandler {
             int size = rand.nextInt(groupingSize) + 1;
             
             while (size > 0) { // find your random word in the later grouping
-                word = br.readLine();
+                word = br.readLine();                
                 size--;
             }
-                        
-            //return word;
         }        
                  
         state = new int[word.length()];
@@ -136,8 +148,7 @@ public class WordHandler {
             
             if (state[a] == GRAY) {
                 updatedLabel += "[GRAY]" + String.valueOf(word.charAt(a));
-            }     
-            System.out.println("During: " + updatedLabel);            
+            }                 
         }              
 
         if (position == word.length()) {
@@ -156,15 +167,9 @@ public class WordHandler {
         int priorIndex = (int) shuffled.keySet().toArray()[position - 1]; // Gets the index of the last placed letter (from the SHUFFLED index)
                
         for (int a = priorIndex - 1; a >= 0; a--) {          
-            if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) { 
-                System.out.println(a + " " + (int) shuffled.keySet().toArray()[position]);                
+            if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) {               
                 state[(int) shuffled.keySet().toArray()[position]] = WHITE;                
-                state[priorIndex] = GRAY;
-                
-                for (int b = 0; b < state.length; b++) {
-                    System.out.print(state[b] + " ");
-                } System.out.println();                
-                
+                state[priorIndex] = GRAY;                               
                 position++;
                 return true;
             }            
@@ -175,7 +180,7 @@ public class WordHandler {
     
     public Boolean handleRight() {
         String redLetter = String.valueOf(user.charAt(position)); // Gets the current to-Sort letter
-        int priorIndex = (int) shuffled.keySet().toArray()[position - 1]; // Gets the index of the last placed letter (from the SHUFFLED index)
+        int priorIndex = (int) shuffled.keySet().toArray()[position - 1]; // Gets the (unshuffled) index of the last placed letter
 
         /*
         int num = 0;
@@ -190,27 +195,51 @@ public class WordHandler {
         int pos = 0;
         for (int a = 0; a < word.length(); a++) {
             if (check == word.charAt(a)) {
-                positions[pos] = a;                 // Store their positions so each can be checked
+                positions[pos] = a;                 // Store their (unshuffled) positions so each can be checked
                 pos++;
             }
         }
+        
+        // uh, if you have THREE identical letters you have to do this for each pair
+        // which could be done with nested FOR loops
+        // 3 letters would need 2 runs, and you'd do pos[0], pos[0+1] where 0 advances
+        // thereby advancing through each pair, returning true when something is found
+        
+        boolean duplicates = true;
+        
+        if (num > 1) {
+            for (int a = positions[0] + 1; a < positions[1]; a++) {
+                if (state[a] == GRAY) {
+                    duplicates = false;
+                }
+            }
+        }
+        
+        if (duplicates) {
+            //System.out.println("PROBLEM");
+        }
+        
+        for (int a = priorIndex; a < word.length(); a++) {
+            if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) {  
+                //state[(int) shuffled.keySet().toArray()[position]] = WHITE;     // this causes whites on the LEFT when you press 
+                state[(int) shuffled.keySet().toArray()[a]] = WHITE;            // this causes double whites and whites on the left...                
+                state[priorIndex] = GRAY;
+                position++;
+                return true;
+            }
+        }
         */
-                
+        
         for (int a = priorIndex; a < word.length(); a++) {             
             if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) {  
-                System.out.println(a + " " + (int) shuffled.keySet().toArray()[position]);
-                state[(int) shuffled.keySet().toArray()[position]] = WHITE;
+                state[(int) shuffled.keySet().toArray()[position]] = WHITE;     // this causes whites on the LEFT when you press 
+                //state[(int) shuffled.keySet().toArray()[a]] = WHITE;            // this causes double whites and whites on the left...
                 state[priorIndex] = GRAY;
-                
-                for (int b = 0; b < state.length; b++) {
-                    System.out.print(state[b] + " ");
-                } System.out.println();                
-                
                 position++;
                 return true;
             }            
         }
-        
+
         return false;     
     }    
     
@@ -220,7 +249,7 @@ public class WordHandler {
     
     public String restart() {        
         user = "";
-        position = 1;        
+        position = 1;  
         
         state = new int[word.length()];
         
@@ -231,5 +260,9 @@ public class WordHandler {
         shuffleLetters();
         
         return word;
+    }
+    
+    public void setLang(int a) {
+        LANG = a;
     }
 }

@@ -19,6 +19,7 @@ import com.badlogic.gdx.utils.Align;
 
 public class StartScreen {
     protected Stage startScreenStage;
+    protected GameScreen gameScreen;
         
     private final Label title;
     
@@ -28,10 +29,23 @@ public class StartScreen {
     
     private final Sound click;
     
+    private int LANG = 0;
+    private final int EN = 0;
+    private final int PT = 1;
+    
+    private TextureRegionDrawable enButtonTexture = new TextureRegionDrawable(
+                                                    new TextureRegion(
+                                                    new Texture(Gdx.files.internal("images/en.png"))));
+    
+    private TextureRegionDrawable ptButtonTexture = new TextureRegionDrawable(
+                                                    new TextureRegion(
+                                                    new Texture(Gdx.files.internal("images/pt.png"))));           
+    
     public boolean startGame = false;
     
-    public StartScreen() {
+    public StartScreen(GameScreen gameScreenReference) {
         startScreenStage = new Stage();
+        gameScreen = gameScreenReference;
         Gdx.input.setInputProcessor(startScreenStage);         
                 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts//Raleway-Medium.ttf"));
@@ -50,26 +64,24 @@ public class StartScreen {
         play = new Button();        
         TextureRegionDrawable playButtonTexture = new TextureRegionDrawable(
                                                   new TextureRegion(
-                                                  new Texture(
-                                                  new FileHandle("images//play.png"))));        
+                                                  new Texture(Gdx.files.internal("images/play.png"))));        
         play.setStyle(new ButtonStyle(playButtonTexture, playButtonTexture, playButtonTexture));
         play.setBounds(105, 248, 190, 105);
         play.addListener(new playListener());
         
         settings = new Button();
-        TextureRegionDrawable settingsButtonTexture = new TextureRegionDrawable(
+        /*TextureRegionDrawable settingsButtonTexture = new TextureRegionDrawable(
                                                   new TextureRegion(
                                                   new Texture(
-                                                  new FileHandle("images//settings.png"))));        
-        settings.setStyle(new ButtonStyle(settingsButtonTexture, settingsButtonTexture, settingsButtonTexture));
+                                                  new FileHandle("images//settings.png"))));*/
+        settings.setStyle(new ButtonStyle(enButtonTexture, enButtonTexture, enButtonTexture));
         settings.setBounds(15, 15, 150, 150); 
         settings.addListener(new settingsListener());
         
         about = new Button();
         TextureRegionDrawable aboutButtonTexture = new TextureRegionDrawable(
-                                                  new TextureRegion(
-                                                  new Texture(
-                                                  new FileHandle("images//about.png"))));        
+                                                   new TextureRegion(
+                                                   new Texture(Gdx.files.internal("images/about.png"))));        
         about.setStyle(new ButtonStyle(aboutButtonTexture, aboutButtonTexture, aboutButtonTexture));
         about.setBounds(225, 15, 150, 150);
         about.addListener(new aboutListener());
@@ -82,30 +94,49 @@ public class StartScreen {
         startScreenStage.addActor(about);
     }
         
-        private class playListener extends ClickListener {    
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                click.play();
-                
-                startGame = true;
-            }
+    private class playListener extends ClickListener {    
+        @Override
+        public void clicked(InputEvent event, float x, float y) {
+            click.play();
+
+            startGame = true;
         }
+    }
         
-        private class settingsListener extends ClickListener {    
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                click.play();
-                
-                System.out.println("Not yet implemented");
+    private class settingsListener extends ClickListener {    
+        @Override
+        public void clicked(InputEvent event, float x, float y) {
+            click.play();
+
+            LANG++;
+
+            if (LANG > PT) {
+                LANG = EN;
             }
-        }        
-        
-        private class aboutListener extends ClickListener {    
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                click.play();
-                
-                System.out.println("Created, slowly, by Matthew Frank");
-            }
+
+            switch (LANG) {
+                case EN:
+                    settings.getStyle().up = enButtonTexture;
+                    settings.getStyle().down = enButtonTexture;
+                    settings.getStyle().checked = enButtonTexture;                    
+                    break;
+                case PT:
+                    settings.getStyle().up = ptButtonTexture;
+                    settings.getStyle().down = ptButtonTexture;
+                    settings.getStyle().checked = ptButtonTexture;                                        
+                    break;
+            } 
+            
+            gameScreen.setLang(LANG);
         }
+    }        
+
+    private class aboutListener extends ClickListener {    
+        @Override
+        public void clicked(InputEvent event, float x, float y) {
+            click.play();
+
+            System.out.println("Created, slowly, by Matthew Frank");
+        }
+    }
 }
