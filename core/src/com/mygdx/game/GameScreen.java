@@ -3,19 +3,20 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
+import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
@@ -25,20 +26,15 @@ import java.util.logging.Logger;
 
 public class GameScreen {
     Stage gameScreenStage;
-    private final WordHandler handler;    
-    
-    private final BitmapFont font;
-    private final FreeTypeFontGenerator generator;
-    private final FreeTypeFontGenerator.FreeTypeFontParameter parameter;    
+    private final TextureAtlas everything;    
+    private final WordHandler handler;          
     
     private final Label wordLabel;
     private final Label userLabel; 
-    private final Label detailLabel;
-    
+    private final Label detailLabel;    
     private final Button newWordButton;
     private final Button readyButton;
     private final Button restartButton;
-    private final Button randomtourButton;
     private final Button difficultyButton;
     private final Button minusplusButton;
     private final Button numbersButton;
@@ -49,9 +45,6 @@ public class GameScreen {
     private final int EASY = 0;
     private final int MEDIUM = 1;
     private final int HARD = 2;
-    private int RANDOMTOUR = 0;
-    private final int RANDOM = 0;
-    private final int TOUR = 1;
     private int NUMBER = 5;
     private int MINUSPLUS = 1;
     private final int MINUS = 0;
@@ -65,169 +58,150 @@ public class GameScreen {
     
     private boolean ready = false;
     public boolean exitGame = false;
-    public boolean setupCalled = false;    
-        
-    TextureRegionDrawable easyTexture = new TextureRegionDrawable(
-                                        new TextureRegion( 
-                                        new Texture(Gdx.files.internal("images/easy.png"))));
-    
-    TextureRegionDrawable mediumTexture =   new TextureRegionDrawable(
-                                            new TextureRegion( 
-                                            new Texture(Gdx.files.internal("images/medium.png"))));
-
-    TextureRegionDrawable hardTexture =     new TextureRegionDrawable(
-                                            new TextureRegion( 
-                                            new Texture(Gdx.files.internal("images/hard.png"))));
-    
-    TextureRegionDrawable randomTexture =   new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/random.png"))));
-
-    TextureRegionDrawable tourTexture =     new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/tour.png"))));
-    
-    TextureRegionDrawable number5 =         new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/number5.png"))));
-
-    TextureRegionDrawable number6 =         new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/number6.png"))));
-        
-    TextureRegionDrawable number7 =         new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/number7.png"))));
-
-    TextureRegionDrawable number8 =         new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/number8.png"))));
-
-    TextureRegionDrawable number9 =         new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/number9.png"))));
-
-    TextureRegionDrawable number10 =        new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/number10.png"))));
-    
-    TextureRegionDrawable minusTexture =    new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/minus.png"))));
-
-    TextureRegionDrawable plusTexture =     new TextureRegionDrawable(
-                                            new TextureRegion(
-                                            new Texture(Gdx.files.internal("images/plus.png"))));
-    
+    public boolean setupCalled = false; 
+    private Table layout;
+            
     public GameScreen() {
         gameScreenStage = new Stage();
-        gameScreenStage.addListener(new gameInputListener());        
+        gameScreenStage.addListener(new gameInputListener()); 
+        everything = new TextureAtlas(Gdx.files.internal("everything.atlas"));
         handler = new WordHandler();
-        
-        // Generates the font using the specific True-Type-Font from assets
-        generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts//Raleway-Medium.ttf"));
-        parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        parameter.size = 40;
-        font = generator.generateFont(parameter);
+                        
+        FileHandle fontHandle = Gdx.files.internal("Raleway-Medium.fnt");
+        BitmapFont font = new BitmapFont(fontHandle);
         font.getData().markupEnabled = true;
-        generator.dispose();        
-        
-        // Sets the label fonts and locations
         Label.LabelStyle fontStyle = new Label.LabelStyle(font, Color.WHITE);
-        fontStyle.background = new TextureRegionDrawable(new TextureRegion(new Texture(Gdx.files.internal("images/black.png"))));
+        fontStyle.background = new TextureRegionDrawable(everything.findRegion("black"));        
+
+        // Sets the label fonts and locations
         wordLabel = new Label("...", fontStyle);
-        wordLabel.setBounds(0, 400, Gdx.graphics.getWidth(), 200);
+        wordLabel.setBounds(0, 1, Gdx.graphics.getWidth(), 1);
+        // x location, y location, x bounds, y bounds
+        //wordLabel.setBounds(0, 400, Gdx.graphics.getWidth(), 200);
         wordLabel.setWrap(true);        
         wordLabel.setAlignment(Align.center);     
         userLabel = new Label("...", fontStyle);
         userLabel.setPosition(100, 100);      
-        userLabel.setBounds(0, 300, Gdx.graphics.getWidth(), 100);
+        //userLabel.setBounds(0, 300, Gdx.graphics.getWidth(), 100);
         userLabel.setWrap(true);
         userLabel.setAlignment(Align.center);
         detailLabel = new Label("...", fontStyle);
-        detailLabel.setWrap(true);
-          
-        TextureRegionDrawable newWordTexture =  new TextureRegionDrawable(
-                                                new TextureRegion(
-                                                new Texture(Gdx.files.internal("images/newword.png"))));       
-        TextureRegionDrawable readyTexture =    new TextureRegionDrawable(
-                                                new TextureRegion(
-                                                new Texture(Gdx.files.internal("images/ready.png"))));
-        TextureRegionDrawable notreadyTexture = new TextureRegionDrawable(
-                                                new TextureRegion(
-                                                new Texture(Gdx.files.internal("images/notready.png"))));       
-        TextureRegionDrawable restartTexture =  new TextureRegionDrawable(
-                                                new TextureRegion(
-                                                new Texture(Gdx.files.internal("images/restart.png"))));       
+        detailLabel.setWrap(true);                             
         
         newWordButton = new Button();         
+        TextureRegionDrawable newWordTexture =  new TextureRegionDrawable(everything.findRegion("newword"));        
         newWordButton.setStyle(new Button.ButtonStyle(newWordTexture, newWordTexture, newWordTexture));
-        newWordButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);
         newWordButton.addListener(new newWordListener());         
-        gameScreenStage.addActor(newWordButton);        
+        //newWordButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);        
+        //gameScreenStage.addActor(newWordButton);        
         
         readyButton = new Button();
-        readyButton.setStyle(new Button.ButtonStyle(notreadyTexture, notreadyTexture, readyTexture));
-        readyButton.setBounds(50, 300, Gdx.graphics.getWidth() - 100, 100);        
+        TextureRegionDrawable notreadyTexture = new TextureRegionDrawable(everything.findRegion("notready"));        
+        TextureRegionDrawable readyTexture = new TextureRegionDrawable(everything.findRegion("ready"));        
+        readyButton.setStyle(new Button.ButtonStyle(notreadyTexture, notreadyTexture, readyTexture));        
         readyButton.addListener(new readyListener());        
-        gameScreenStage.addActor(readyButton);    
+        //readyButton.setBounds(50, 300, Gdx.graphics.getWidth() - 100, 100);        
+        //gameScreenStage.addActor(readyButton);    
         
         restartButton = new Button();
+        TextureRegionDrawable restartTexture = new TextureRegionDrawable(everything.findRegion("restart"));        
         restartButton.setStyle(new Button.ButtonStyle(restartTexture, restartTexture, restartTexture));
-        restartButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);
+        //restartButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);
         restartButton.addListener(new restartListener()); 
         
         difficultyButton = new Button();
+        TextureRegionDrawable mediumTexture = new TextureRegionDrawable(everything.findRegion("medium"));
         difficultyButton.setStyle(new Button.ButtonStyle(mediumTexture, mediumTexture, mediumTexture));
-        difficultyButton.setBounds(50, 50, 100, 100);
+        //difficultyButton.setBounds(50, 50, 100, 100);
         difficultyButton.addListener(new difficultyListener()); 
-        gameScreenStage.addActor(difficultyButton);
-        
-        randomtourButton = new Button();
-        randomtourButton.setStyle(new Button.ButtonStyle(randomTexture, randomTexture, randomTexture));
-        randomtourButton.setBounds(150, 50, 100, 100);
-        randomtourButton.addListener(new randomtourListener()); 
-        //gameScreenStage.addActor(randomtourButton);
-        
+        //gameScreenStage.addActor(difficultyButton);
+                
         numbersButton = new Button();
+        TextureRegionDrawable number5 = new TextureRegionDrawable(everything.findRegion("number5"));        
         numbersButton.setStyle(new Button.ButtonStyle(number5, number5, number5));
-        numbersButton.setBounds(150, 50, 100, 100);
+        //numbersButton.setBounds(150, 50, 100, 100);
         numbersButton.addListener(new numbersListener()); 
-        gameScreenStage.addActor(numbersButton);        
+        //gameScreenStage.addActor(numbersButton);        
 
         minusplusButton = new Button();
+        TextureRegionDrawable plusTexture = new TextureRegionDrawable(everything.findRegion("plus"));        
         minusplusButton.setStyle(new Button.ButtonStyle(plusTexture, plusTexture, plusTexture));
-        minusplusButton.setBounds(250, 50, 100, 100);
+        //minusplusButton.setBounds(250, 50, 100, 100);
         minusplusButton.addListener(new minusplusListener()); 
-        gameScreenStage.addActor(minusplusButton);                      
+        //gameScreenStage.addActor(minusplusButton);                      
                         
-        TextureAtlas timerAtlas = new TextureAtlas(Gdx.files.internal("animation//timer.atlas")); 
+        TextureAtlas timerAtlas = new TextureAtlas(Gdx.files.internal("timer.atlas")); 
         Animation timerAnim = new Animation(1 / (timerAtlas.getRegions().size / 10f), timerAtlas.getRegions());   
         timerActor = new TimerActor(timerAnim);   
                 
-        error = Gdx.audio.newSound(Gdx.files.internal("sounds//error.ogg"));
-        correct = Gdx.audio.newSound(Gdx.files.internal("sounds//correct.ogg"));  
-        click = Gdx.audio.newSound(Gdx.files.internal("sounds//click.ogg"));                        
+        error = Gdx.audio.newSound(Gdx.files.internal("error.ogg"));
+        correct = Gdx.audio.newSound(Gdx.files.internal("correct.ogg"));  
+        click = Gdx.audio.newSound(Gdx.files.internal("click.ogg"));     
+        
+        layout = new Table();
+        layout.setFillParent(true);  
+        //layout.setDebug(true);
     }
         
     public void setup() {
         gameScreenStage.clear();
         gameScreenStage.addListener(new gameInputListener());
-        gameScreenStage.addActor(newWordButton);
-        gameScreenStage.addActor(readyButton);  
+        
+        gameScreenStage.addActor(layout);
+        
+        // table layouts allow for CHANGING the actor in a cell, but not for
+        // dynamically adding or removing them healthily
+        layout.add(wordLabel).colspan(3).row();
+                        
+        AtlasRegion newwordRegion = new AtlasRegion(everything.findRegion("newword"));        
+        layout.add(newWordButton).prefHeight(newwordRegion.originalHeight)
+                                 .prefWidth(newwordRegion.originalWidth)
+                                 .minHeight(newwordRegion.originalHeight / 2)
+                                 .maxHeight(newwordRegion.originalHeight * 2)
+                                 .minWidth(newwordRegion.originalWidth / 2)
+                                 .maxWidth(newwordRegion.originalWidth * 2)
+                                 .colspan(3);
+        layout.row();        
+        
+        AtlasRegion readyRegion = new AtlasRegion(everything.findRegion("ready"));        
+        layout.add(readyButton).prefHeight(readyRegion.originalHeight)
+                               .prefWidth(readyRegion.originalWidth)
+                               .minHeight(readyRegion.originalHeight / 2)
+                               .maxHeight(readyRegion.originalHeight * 2)
+                               .minWidth(readyRegion.originalWidth / 2)
+                               .maxWidth(readyRegion.originalWidth * 2)
+                               .colspan(3);
         readyButton.setDisabled(true);
-        TextureRegionDrawable notreadyTexture =   new TextureRegionDrawable(
-                                                  new TextureRegion(
-                                                  new Texture(Gdx.files.internal("images/notready.png"))));                
-        readyButton.getStyle().up = notreadyTexture;
-        readyButton.getStyle().down = notreadyTexture; 
-        gameScreenStage.addActor(difficultyButton);   
-        gameScreenStage.addActor(minusplusButton);
-        gameScreenStage.addActor(numbersButton);
+        readyButton.getStyle().up = new TextureRegionDrawable(everything.findRegion("notready"));
+        readyButton.getStyle().down = new TextureRegionDrawable(everything.findRegion("notready"));        
+        layout.row();        
+        
+        AtlasRegion difficultyRegion = new AtlasRegion(everything.findRegion("easy"));
+        layout.add(difficultyButton).prefHeight(difficultyRegion.originalHeight / 2)
+                                    .prefWidth(difficultyRegion.originalWidth / 3)
+                                    .minHeight(difficultyRegion.originalHeight / 2)
+                                    .maxHeight(difficultyRegion.originalHeight * 2)
+                                    .minWidth(readyRegion.originalWidth / 3)
+                                    .maxWidth(readyRegion.originalWidth / 3);
+        AtlasRegion numberRegion = new AtlasRegion(everything.findRegion("number5"));   
+        layout.add(numbersButton).prefHeight(numberRegion.originalHeight / 2)
+                                 .prefWidth(numberRegion.originalWidth / 3)
+                                 .minHeight(numberRegion.originalHeight / 2)
+                                 .maxHeight(numberRegion.originalHeight * 2)
+                                 .minWidth(readyRegion.originalWidth / 3)
+                                 .maxWidth(readyRegion.originalWidth / 3);
+        AtlasRegion minusplusRegion = new AtlasRegion(everything.findRegion("minus"));   
+        layout.add(minusplusButton).prefHeight(minusplusRegion.originalHeight / 2)
+                                   .prefWidth(minusplusRegion.originalWidth / 3)
+                                   .minHeight(minusplusRegion.originalHeight / 2)
+                                   .maxHeight(minusplusRegion.originalHeight * 2)
+                                   .minWidth(readyRegion.originalWidth / 3)
+                                   .maxWidth(readyRegion.originalWidth / 3);
+        
         wordLabel.setText("");
         userLabel.setText("");
         ready = false;        
-        timerActor.reset();
+        timerActor.reset();             
     }     
         
     private class newWordListener extends ClickListener {
@@ -279,8 +253,7 @@ public class GameScreen {
             gameScreenStage.addActor(newWordButton);
             gameScreenStage.addActor(readyButton);           
             timerActor.reset();    
-            timerActor.remove();            
-            handler.restart();        
+            timerActor.remove();                    
             String word = handler.restart();
             wordLabel.setText(word);  
             ready = false;            
@@ -292,7 +265,8 @@ public class GameScreen {
         int length = word.length();             
         switch (time) {
             case EASY:
-                timerActor.setTimerLength((float) (length + (length * .25))); // needs to get larger                  
+                //timerActor.setTimerLength((float) (length + (length * .25))); // needs to get larger                  
+                timerActor.setTimerLength(500);
                 break;
             case MEDIUM:
                 timerActor.setTimerLength((float) length);
@@ -314,8 +288,9 @@ public class GameScreen {
     public void checkEndConditions() {  
         if (ready) {
             if (timerActor.isDone() || handler.isComplete()) {
-                ready = false;    
-                //timerActor.stopTimer();
+                ready = false;   
+                timerActor.stopTimer();
+                timerActor.remove();
             }            
         }
     }    
@@ -348,13 +323,7 @@ public class GameScreen {
 
                 detailLabel.setText(collated);
             }
-            
-            if (randomtourButton.isOver()) {
-                randomtourButton.toFront();                
-                detailLabel.setText("Random: any word from the whole set\n"
-                                  + "Tour: ten random words, repeated\n");
-            }
-            
+                        
             if (numbersButton.isOver() || minusplusButton.isOver()) {
                 numbersButton.toFront();
                 
@@ -389,16 +358,19 @@ public class GameScreen {
                         
             switch (DIFFICULTY) {
                 case EASY:
+                    TextureRegionDrawable easyTexture = new TextureRegionDrawable(everything.findRegion("easy"));
                     difficultyButton.getStyle().up = easyTexture;
                     difficultyButton.getStyle().down = easyTexture;
                     difficultyButton.getStyle().checked = easyTexture;                    
                     break;
                 case MEDIUM:
+                    TextureRegionDrawable mediumTexture = new TextureRegionDrawable(everything.findRegion("medium"));                    
                     difficultyButton.getStyle().up = mediumTexture;
                     difficultyButton.getStyle().down = mediumTexture;
                     difficultyButton.getStyle().checked = mediumTexture;                     
                     break;
                 case HARD:
+                    TextureRegionDrawable hardTexture = new TextureRegionDrawable(everything.findRegion("hard"));                    
                     difficultyButton.getStyle().up = hardTexture;
                     difficultyButton.getStyle().down = hardTexture;
                     difficultyButton.getStyle().checked = hardTexture;                     
@@ -424,40 +396,7 @@ public class GameScreen {
                 removeDetail();
             }
         }
-    } 
-            
-    private class randomtourListener extends ClickListener {
-        @Override
-        public void clicked(InputEvent event, float x, float y) {
-            click.play();
-            
-            RANDOMTOUR++;
-            
-            if (RANDOMTOUR > TOUR) {
-                RANDOMTOUR = RANDOM;
-            }
-            
-            switch (RANDOMTOUR) {
-                case RANDOM:
-                    randomtourButton.getStyle().up = randomTexture;
-                    randomtourButton.getStyle().down = randomTexture;
-                    randomtourButton.getStyle().checked = randomTexture;                    
-                    break;
-                case TOUR:
-                    randomtourButton.getStyle().up = tourTexture;
-                    randomtourButton.getStyle().down = tourTexture;
-                    randomtourButton.getStyle().checked = tourTexture;                     
-                    break;
-            }            
-        }   
-        
-        @Override
-        public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) { 
-            if (!randomtourButton.isOver()) {
-                removeDetail();
-            }
-        }        
-    }   
+    }              
     
     private class numbersListener extends ClickListener {
         @Override
@@ -472,31 +411,37 @@ public class GameScreen {
             
             switch (NUMBER) {
                 case 5:
+                    TextureRegionDrawable number5 = new TextureRegionDrawable(everything.findRegion("number5"));                    
                     numbersButton.getStyle().up = number5;
                     numbersButton.getStyle().down = number5;
                     numbersButton.getStyle().checked = number5;                    
                     break;
                 case 6:
+                    TextureRegionDrawable number6 = new TextureRegionDrawable(everything.findRegion("number6"));                    
                     numbersButton.getStyle().up = number6;
                     numbersButton.getStyle().down = number6;
                     numbersButton.getStyle().checked = number6;                     
                     break;
                 case 7:
+                    TextureRegionDrawable number7 = new TextureRegionDrawable(everything.findRegion("number7"));                    
                     numbersButton.getStyle().up = number7;
                     numbersButton.getStyle().down = number7;
                     numbersButton.getStyle().checked = number7;                    
                     break;
                 case 8:
+                    TextureRegionDrawable number8 = new TextureRegionDrawable(everything.findRegion("number8"));                    
                     numbersButton.getStyle().up = number8;
                     numbersButton.getStyle().down = number8;
                     numbersButton.getStyle().checked = number8;                     
                     break;
                 case 9:
+                    TextureRegionDrawable number9 = new TextureRegionDrawable(everything.findRegion("number9"));                    
                     numbersButton.getStyle().up = number9;
                     numbersButton.getStyle().down = number9;
                     numbersButton.getStyle().checked = number9;                    
                     break;
                 case 10:
+                    TextureRegionDrawable number10 = new TextureRegionDrawable(everything.findRegion("number10"));                    
                     numbersButton.getStyle().up = number10;
                     numbersButton.getStyle().down = number10;
                     numbersButton.getStyle().checked = number10;                    
@@ -530,20 +475,21 @@ public class GameScreen {
             
             switch (MINUSPLUS) {
                 case MINUS:
+                    TextureRegionDrawable minusTexture = new TextureRegionDrawable(everything.findRegion("minus"));                    
                     minusplusButton.getStyle().up = minusTexture;
                     minusplusButton.getStyle().down = minusTexture;
                     minusplusButton.getStyle().checked = minusTexture;                    
-                    
-                    if (handler.getWord().length() > NUMBER) {
+
+                    if (handler.getWord() != null && handler.getWord().length() > NUMBER) {
                         try {
                             wordLabel.setText(handler.selectNewWord(NUMBER, MINUSPLUS));
                         } catch (IOException ex) {
                             Logger.getLogger(GameScreen.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
-                    
                     break;
                 case PLUS:
+                    TextureRegionDrawable plusTexture = new TextureRegionDrawable(everything.findRegion("plus"));                    
                     minusplusButton.getStyle().up = plusTexture;
                     minusplusButton.getStyle().down = plusTexture;
                     minusplusButton.getStyle().checked = plusTexture;                     

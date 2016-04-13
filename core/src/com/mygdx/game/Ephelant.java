@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch; 
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 public class Ephelant extends ApplicationAdapter {
     private OrthographicCamera camera;
@@ -17,30 +19,63 @@ public class Ephelant extends ApplicationAdapter {
     private static final int GAME = 1;
     private StartScreen startScreen;
     private GameScreen gameScreen;   
-    
-    private Texture background; 
          
     /* THINGS TO DO    
         FEATURES
     
-        1.  Pressing 'ESC' should pause everything + ask yes/no to quit.
+        FXD.  Use texture atlases instead of base inclusions
     
-        2.  Display locations need to be relative rather than hardcoded.
+        0.  Use block letters instead of lower-case letters
+    
+        1.  Pressing 'ESC' should pause everything + ask yes/no to quit.
+            Maybe not because:
+            a) the game might be able to be condensed into a single screen
+            b) from a mobile perspective one button press is all it takes to
+               indicate that's what the user wants
+    
+        2.  Display locations and sizes need to be relative rather than hardcoded.
     
         3.  Add teasing labels when user fails.   
     
         4.  Make multi-language support more robust by adding assets so buttons
             can reflect language choices.
+            
+        5.  Needs a tutorial or explanation
     
-        BUGS
-        
-        1.  Timer: the timer needs to be removed before pasting a completed
-                   word to wordLabel, otherwise it overlaps obviously.
+        6.  Identify time being up somehow by adding:
+            a) adding a sound
+            b) display the word with completed letters in white, and incomplete
+               letters in red
+            c) display a big "TIME'S UP"
+            d) display teasing messages like:
+                "What's a [WORD]?"
+                "My grandma makes [WORD] too!"
     
-        2.  Timer: the timer does not stop when a word has been successfully
-                   completed.
+        7.  SCORE.  SCORE.  SCORE.  There must be a score.
+            Local scores as well as global scores.
     
-        3.  Relative positions: when duplicate characters exist a number of
+        8.  Different modes, such as:
+            Tour - giving the player words to spell until they fail
+            Timed - how many words can you spell in X seconds
+            Score - spell words until reaching a specific score
+    
+        9.  Underline or BOX the highlighted letter
+    
+        BUGS (FXD = FIXED) (WNF = WILL NOT FIX)
+    
+        IMPORTANT: switching to minus crashes when first starting up
+
+        FXD - Crash if plus/minus button is clicked before anything else
+              RESULT: minusplusListener now checks to see if handler.getWord() is null
+        FXD - shuffleLetters() is being called twice on restart.
+              RESULT: restartListener was calling shuffle twice        
+        FXD - Timer: the timer needs to be removed before pasting a completed
+                     word to wordLabel, otherwise it overlaps.
+              RESULT: checkEndConditions() now stops and removes the timer. 
+        FXD - The timer does not stop when a word is completed.
+              RESULT: checkEndConditions() now stops and removes the timer.
+
+        WNF.  Relative positions: when duplicate characters exist a number of
                                 issues crop up.
     
                                 (A) Left and Right can both be valid answers.
@@ -78,9 +113,8 @@ public class Ephelant extends ApplicationAdapter {
     @Override
     public void create() {
         batch = new SpriteBatch();                                      
-                
-        background = new Texture("images//background.png");        
-        camera = new OrthographicCamera(background.getWidth(), background.getHeight());
+                         
+        camera = new OrthographicCamera(1164, 1164);
         camera.position.set(camera.viewportWidth * 0.5f, camera.viewportHeight * 0.5f, 0);
         camera.update();                                                   
         
@@ -96,7 +130,6 @@ public class Ephelant extends ApplicationAdapter {
         if (screen == MENU) {                     
             Gdx.input.setInputProcessor(startScreen.startScreenStage);
             batch.begin();
-            batch.draw(background, 0, 0);
             batch.end();
             startScreen.startScreenStage.act();
             startScreen.startScreenStage.draw();    

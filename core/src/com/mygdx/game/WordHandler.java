@@ -32,7 +32,7 @@ public class WordHandler {
                 break;
         }
         
-        FileHandle words = Gdx.files.internal("words\\" + wordList + ".txt");
+        FileHandle words = Gdx.files.internal(wordList + ".txt");
         BufferedReader br = new BufferedReader(words.reader()); 
         
         Random rand = new Random();
@@ -114,8 +114,9 @@ public class WordHandler {
         for (int a = 0; a < place.length; a++) {
             shuffled.put(place[a], String.valueOf(word.charAt(place[a])));
         }
-        
-        state[(int) shuffled.keySet().toArray()[0]] = WHITE;  
+               
+        //state[(int) shuffled.keySet().toArray()[0]] = WHITE;
+        state[Integer.valueOf(shuffled.keySet().toArray()[0].toString())] = WHITE;
         
         user = "";
         for (int a = 0; a < shuffled.size(); a++) {
@@ -161,11 +162,11 @@ public class WordHandler {
     
     public Boolean handleLeft() {                       
         String redLetter = String.valueOf(user.charAt(position)); // Gets the current to-Sort letter
-        int priorIndex = (int) shuffled.keySet().toArray()[position - 1]; // Gets the index of the last placed letter (from the SHUFFLED index)
+        int priorIndex = Integer.valueOf(shuffled.keySet().toArray()[position - 1].toString()); // Gets the index of the last placed letter (from the SHUFFLED index)
                
         for (int a = priorIndex - 1; a >= 0; a--) {          
             if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) {               
-                state[(int) shuffled.keySet().toArray()[position]] = WHITE;                
+                state[Integer.valueOf(shuffled.keySet().toArray()[position].toString())] = WHITE;                
                 state[priorIndex] = GRAY;                               
                 position++;
                 return true;
@@ -177,7 +178,7 @@ public class WordHandler {
     
     public Boolean handleRight() {
         String redLetter = String.valueOf(user.charAt(position)); // Gets the current to-Sort letter
-        int priorIndex = (int) shuffled.keySet().toArray()[position - 1]; // Gets the (unshuffled) index of the last placed letter
+        int priorIndex = Integer.valueOf(shuffled.keySet().toArray()[position - 1].toString()); // Gets the (unshuffled) index of the last placed letter
 
         /*
         int num = 0;
@@ -229,8 +230,8 @@ public class WordHandler {
         
         for (int a = priorIndex; a < word.length(); a++) {             
             if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) {  
-                state[(int) shuffled.keySet().toArray()[position]] = WHITE;     // this causes whites on the LEFT when you press 
-                //state[(int) shuffled.keySet().toArray()[a]] = WHITE;            // this causes double whites and whites on the left...
+                state[Integer.valueOf(shuffled.keySet().toArray()[position].toString())] = WHITE; // this causes whites on the LEFT when you press 
+                //state[(int) shuffled.keySet().toArray()[a]] = WHITE; // this causes double whites and whites on the left...
                 state[priorIndex] = GRAY;
                 position++;
                 return true;
@@ -253,7 +254,7 @@ public class WordHandler {
         for (int a = 0; a < state.length; a++) {
             state[a] = CLEAR;
         }
-        
+
         shuffleLetters();
         
         return word;
