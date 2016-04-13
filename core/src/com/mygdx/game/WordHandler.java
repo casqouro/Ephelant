@@ -115,7 +115,6 @@ public class WordHandler {
             shuffled.put(place[a], String.valueOf(word.charAt(place[a])));
         }
                
-        //state[(int) shuffled.keySet().toArray()[0]] = WHITE;
         state[Integer.valueOf(shuffled.keySet().toArray()[0].toString())] = WHITE;
         
         user = "";

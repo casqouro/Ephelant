@@ -5,41 +5,58 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
-import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
+import com.badlogic.gdx.scenes.scene2d.ui.HorizontalGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class GameScreen {
     Stage gameScreenStage;
     private final TextureAtlas everything;    
-    private final WordHandler handler;          
+    private final WordHandler handler;  
+    private final Table layout;  
+    private final HorizontalGroup hGroup;    
+    private final TimerActor timerActor;  
+    private final HashMap<String, Label> letterMap;
     
     private final Label wordLabel;
     private final Label userLabel; 
-    private final Label detailLabel;    
+    private final Label detailLabel; 
+    private final Label letter0;
+    private final Label letter1;
+    private final Label letter2;
+    private final Label letter3;
+    private final Label letter4; 
+    private final Label letter5;
+    private final Label letter6;
+    private final Label letter7;
+    private final Label letter8;
+    private final Label letter9;    
     private final Button newWordButton;
     private final Button readyButton;
     private final Button restartButton;
     private final Button difficultyButton;
     private final Button minusplusButton;
     private final Button numbersButton;
-    
-    // as cool as this is, it's wastey on spacey...
+        
     private int LANG = 0;
     private int DIFFICULTY = 1;
     private final int EASY = 0;
@@ -48,9 +65,7 @@ public class GameScreen {
     private int NUMBER = 5;
     private int MINUSPLUS = 1;
     private final int MINUS = 0;
-    private final int PLUS = 1;
-    
-    private final TimerActor timerActor;    
+    private final int PLUS = 1;        
     
     private final Sound error;
     private final Sound correct;   
@@ -59,13 +74,16 @@ public class GameScreen {
     private boolean ready = false;
     public boolean exitGame = false;
     public boolean setupCalled = false; 
-    private Table layout;
             
     public GameScreen() {
         gameScreenStage = new Stage();
         gameScreenStage.addListener(new gameInputListener()); 
         everything = new TextureAtlas(Gdx.files.internal("everything.atlas"));
         handler = new WordHandler();
+        layout = new Table();
+        layout.setFillParent(true);  
+        layout.setDebug(true);
+        hGroup = new HorizontalGroup();        
                         
         FileHandle fontHandle = Gdx.files.internal("Raleway-Medium.fnt");
         BitmapFont font = new BitmapFont(fontHandle);
@@ -73,35 +91,65 @@ public class GameScreen {
         Label.LabelStyle fontStyle = new Label.LabelStyle(font, Color.WHITE);
         fontStyle.background = new TextureRegionDrawable(everything.findRegion("black"));        
 
-        // Sets the label fonts and locations
         wordLabel = new Label("...", fontStyle);
-        wordLabel.setBounds(0, 1, Gdx.graphics.getWidth(), 1);
-        // x location, y location, x bounds, y bounds
         //wordLabel.setBounds(0, 400, Gdx.graphics.getWidth(), 200);
         wordLabel.setWrap(true);        
         wordLabel.setAlignment(Align.center);     
         userLabel = new Label("...", fontStyle);
-        userLabel.setPosition(100, 100);      
+        //userLabel.setPosition(100, 100);      
         //userLabel.setBounds(0, 300, Gdx.graphics.getWidth(), 100);
         userLabel.setWrap(true);
         userLabel.setAlignment(Align.center);
         detailLabel = new Label("...", fontStyle);
-        detailLabel.setWrap(true);                             
+        detailLabel.setWrap(true);    
+        
+        LabelStyle backgroundStyle = new LabelStyle();
+        backgroundStyle.font = font;
+        backgroundStyle.background = new TextureRegionDrawable(new TextureRegion(new Texture((Gdx.files.internal("background.png")))));
+        letter0 = new Label("", backgroundStyle);
+        letter0.setAlignment(Align.center);
+        letter1 = new Label("", backgroundStyle);        
+        letter1.setAlignment(Align.center);        
+        letter2 = new Label("", backgroundStyle);        
+        letter2.setAlignment(Align.center);
+        letter3 = new Label("", backgroundStyle);        
+        letter3.setAlignment(Align.center);        
+        letter4 = new Label("", backgroundStyle);        
+        letter4.setAlignment(Align.center);
+        letter5 = new Label("", backgroundStyle);        
+        letter5.setAlignment(Align.center);
+        letter6 = new Label("", backgroundStyle);        
+        letter6.setAlignment(Align.center);
+        letter7 = new Label("", backgroundStyle);        
+        letter7.setAlignment(Align.center);
+        letter8 = new Label("", backgroundStyle);        
+        letter8.setAlignment(Align.center);
+        letter9 = new Label("", backgroundStyle);        
+        letter9.setAlignment(Align.center); 
+        letterMap = new HashMap<>();
+        letterMap.put("letter0", letter0);
+        letterMap.put("letter1", letter1);
+        letterMap.put("letter2", letter2);
+        letterMap.put("letter3", letter3);
+        letterMap.put("letter4", letter4);
+        letterMap.put("letter5", letter5);
+        letterMap.put("letter6", letter6);
+        letterMap.put("letter7", letter7);                
+        letterMap.put("letter8", letter8);        
+        letterMap.put("letter9", letter9);                              
         
         newWordButton = new Button();         
         TextureRegionDrawable newWordTexture =  new TextureRegionDrawable(everything.findRegion("newword"));        
         newWordButton.setStyle(new Button.ButtonStyle(newWordTexture, newWordTexture, newWordTexture));
         newWordButton.addListener(new newWordListener());         
-        //newWordButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);        
-        //gameScreenStage.addActor(newWordButton);        
+        //newWordButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);              
         
         readyButton = new Button();
         TextureRegionDrawable notreadyTexture = new TextureRegionDrawable(everything.findRegion("notready"));        
         TextureRegionDrawable readyTexture = new TextureRegionDrawable(everything.findRegion("ready"));        
         readyButton.setStyle(new Button.ButtonStyle(notreadyTexture, notreadyTexture, readyTexture));        
         readyButton.addListener(new readyListener());        
-        //readyButton.setBounds(50, 300, Gdx.graphics.getWidth() - 100, 100);        
-        //gameScreenStage.addActor(readyButton);    
+        //readyButton.setBounds(50, 300, Gdx.graphics.getWidth() - 100, 100);           
         
         restartButton = new Button();
         TextureRegionDrawable restartTexture = new TextureRegionDrawable(everything.findRegion("restart"));        
@@ -114,45 +162,48 @@ public class GameScreen {
         difficultyButton.setStyle(new Button.ButtonStyle(mediumTexture, mediumTexture, mediumTexture));
         //difficultyButton.setBounds(50, 50, 100, 100);
         difficultyButton.addListener(new difficultyListener()); 
-        //gameScreenStage.addActor(difficultyButton);
-                
+        
         numbersButton = new Button();
         TextureRegionDrawable number5 = new TextureRegionDrawable(everything.findRegion("number5"));        
         numbersButton.setStyle(new Button.ButtonStyle(number5, number5, number5));
         //numbersButton.setBounds(150, 50, 100, 100);
-        numbersButton.addListener(new numbersListener()); 
-        //gameScreenStage.addActor(numbersButton);        
+        numbersButton.addListener(new numbersListener());        
 
         minusplusButton = new Button();
         TextureRegionDrawable plusTexture = new TextureRegionDrawable(everything.findRegion("plus"));        
         minusplusButton.setStyle(new Button.ButtonStyle(plusTexture, plusTexture, plusTexture));
         //minusplusButton.setBounds(250, 50, 100, 100);
-        minusplusButton.addListener(new minusplusListener()); 
-        //gameScreenStage.addActor(minusplusButton);                      
-                        
+        minusplusButton.addListener(new minusplusListener());
+                                       
         TextureAtlas timerAtlas = new TextureAtlas(Gdx.files.internal("timer.atlas")); 
         Animation timerAnim = new Animation(1 / (timerAtlas.getRegions().size / 10f), timerAtlas.getRegions());   
         timerActor = new TimerActor(timerAnim);   
                 
         error = Gdx.audio.newSound(Gdx.files.internal("error.ogg"));
         correct = Gdx.audio.newSound(Gdx.files.internal("correct.ogg"));  
-        click = Gdx.audio.newSound(Gdx.files.internal("click.ogg"));     
-        
-        layout = new Table();
-        layout.setFillParent(true);  
-        //layout.setDebug(true);
+        click = Gdx.audio.newSound(Gdx.files.internal("click.ogg"));             
     }
         
-    public void setup() {
+    public void tableSetup() {
         gameScreenStage.clear();
         gameScreenStage.addListener(new gameInputListener());
-        
+        layout.clear();  
         gameScreenStage.addActor(layout);
+        hGroup.clear();
+        layout.add(hGroup).expandX().colspan(4);
         
-        // table layouts allow for CHANGING the actor in a cell, but not for
-        // dynamically adding or removing them healthily
-        layout.add(wordLabel).colspan(3).row();
-                        
+        hGroup.addActor(letter0);
+        hGroup.addActor(letter1);
+        hGroup.addActor(letter2);
+        hGroup.addActor(letter3);
+        hGroup.addActor(letter4);
+        hGroup.addActor(letter5);
+        hGroup.addActor(letter6);        
+        hGroup.addActor(letter7);
+        hGroup.addActor(letter8);
+        hGroup.addActor(letter9);
+        layout.row();
+                                        
         AtlasRegion newwordRegion = new AtlasRegion(everything.findRegion("newword"));        
         layout.add(newWordButton).prefHeight(newwordRegion.originalHeight)
                                  .prefWidth(newwordRegion.originalWidth)
@@ -160,9 +211,7 @@ public class GameScreen {
                                  .maxHeight(newwordRegion.originalHeight * 2)
                                  .minWidth(newwordRegion.originalWidth / 2)
                                  .maxWidth(newwordRegion.originalWidth * 2)
-                                 .colspan(3);
-        layout.row();        
-        
+                                 .colspan(2);                
         AtlasRegion readyRegion = new AtlasRegion(everything.findRegion("ready"));        
         layout.add(readyButton).prefHeight(readyRegion.originalHeight)
                                .prefWidth(readyRegion.originalWidth)
@@ -170,7 +219,7 @@ public class GameScreen {
                                .maxHeight(readyRegion.originalHeight * 2)
                                .minWidth(readyRegion.originalWidth / 2)
                                .maxWidth(readyRegion.originalWidth * 2)
-                               .colspan(3);
+                               .colspan(1);
         readyButton.setDisabled(true);
         readyButton.getStyle().up = new TextureRegionDrawable(everything.findRegion("notready"));
         readyButton.getStyle().down = new TextureRegionDrawable(everything.findRegion("notready"));        
@@ -203,22 +252,28 @@ public class GameScreen {
         ready = false;        
         timerActor.reset();             
     }     
-        
+            
     private class newWordListener extends ClickListener {
         @Override
         public void clicked(InputEvent event, float x, float y) {
-            click.play();            
+            click.play();      
             
-            gameScreenStage.addActor(wordLabel);
-            readyButton.getStyle().up = readyButton.getStyle().checked;
-            readyButton.getStyle().down = readyButton.getStyle().checked;   
-            readyButton.setDisabled(false);
-            
-            try {             
-                wordLabel.setText(handler.selectNewWord(NUMBER, MINUSPLUS)); 
+            String word = "";
+            try { 
+                word = (handler.selectNewWord(NUMBER, MINUSPLUS)); 
             } catch (IOException ex) {
                 Logger.getLogger(Ephelant.class.getName()).log(Level.SEVERE, null, ex);
-            }                 
+            }
+            
+            hGroup.clear();            
+            for (int a = 0; a < word.length(); a++) {
+                letterMap.get("letter" + String.valueOf(a)).setText(String.valueOf(word.charAt(a)));
+                hGroup.addActor(letterMap.get("letter" + String.valueOf(a)));
+            }
+            
+            readyButton.getStyle().up = readyButton.getStyle().checked;
+            readyButton.getStyle().down = readyButton.getStyle().checked;   
+            readyButton.setDisabled(false);                            
         }
     } 
     
@@ -231,12 +286,17 @@ public class GameScreen {
                 newWordButton.remove();
                 readyButton.remove();
                 gameScreenStage.addActor(restartButton);
-                gameScreenStage.addActor(userLabel);
+                //gameScreenStage.addActor(userLabel);
                 gameScreenStage.addActor(timerActor);                
                 timerActor.runTimer(); 
 
                 setTimer(handler.getWord());
 
+                String update = handler.updateUserLabel();
+                for (int a = 0; a < letterMap.size(); a++) {
+                    
+                }
+                
                 wordLabel.setText(handler.updateWordLabel());
                 userLabel.setText(handler.updateUserLabel());
                 ready = true;   
@@ -298,7 +358,7 @@ public class GameScreen {
     private void displayDetail() {
             gameScreenStage.addActor(detailLabel);
             detailLabel.setFontScale(0.6f);
-            detailLabel.setBounds(25, 200, Gdx.graphics.getWidth() - 25, 150);
+            detailLabel.setBounds(25, 200, Gdx.graphics.getWidth() - 25, 150);            
             
             if (difficultyButton.isOver()) {
                 difficultyButton.toFront();
