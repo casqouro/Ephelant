@@ -11,7 +11,7 @@ import java.util.Random;
 public class WordHandler {
     private String word; 
     private String user;
-    private int[] state;
+    public int[] state;
     private Map<Integer, String> shuffled;    
 
     private static final int CLEAR = 0;
@@ -19,7 +19,7 @@ public class WordHandler {
     private static final int WHITE = 2;   
     private int LANG = 0;
     private int position = 1;
-           
+               
     // Return a random word from the wordlist
     public String selectNewWord(int NUMBER, int MINUSPLUS) throws IOException {
         String wordList = "";
@@ -34,6 +34,20 @@ public class WordHandler {
         
         FileHandle words = Gdx.files.internal(wordList + ".txt");
         BufferedReader br = new BufferedReader(words.reader()); 
+        
+        /* checks for duplicates
+        for (int a = 0; a < 308; a++) {
+            word = br.readLine();
+            
+            for (int b = 0; b < word.length(); b++) {
+                for (int c = b+1; c < word.length(); c++) {
+                    if (word.charAt(b) == word.charAt(c)) {
+                        System.out.println(word);
+                    }
+                }
+            }
+        }
+        */
         
         Random rand = new Random();
         word = "";
@@ -95,10 +109,10 @@ public class WordHandler {
         }
         
         shuffleLetters();
-        
+                
         return word;
-    }         
-        
+    } 
+            
     // Uses a Fisher-Yates shuffle on an int array, used to build a shuffled map.    
     private void shuffleLetters() {
         Random rand = new Random();
@@ -131,30 +145,55 @@ public class WordHandler {
             return "[RED]" + String.valueOf(user.charAt(position));
         } 
   
-        return "[WHITE]" + word;
+        return "";
     }    
     
     // Should happen after a player left/right movement
-    public String updateUserLabel() {
-        String updatedLabel = "";
+    public String[] updateUserLabel() { 
+        String[] updatedLabel = new String[word.length()];
                 
-        for (int a = 0; a < state.length; a++) { 
-            if (state[a] == WHITE) {
-                updatedLabel += "[WHITE]" + String.valueOf(word.charAt(a));
+        for (int a = 0; a < updatedLabel.length; a++) {
+            switch (state[a]) {
+                case GRAY:
+                    updatedLabel[a] = "[GRAY]" + word.charAt(a);  // may need to be String.valueOf(word.charAt(a))  
+                    break;                     
+                case CLEAR:
+                    updatedLabel[a] = "";  
+                    break;
+                case WHITE:
+                    updatedLabel[a] = "[WHITE]" + word.charAt(a);    
+                    break;                    
             } 
-            
-            if (state[a] == GRAY) {
-                updatedLabel += "[GRAY]" + String.valueOf(word.charAt(a));
-            }                 
-        }              
+        } 
 
         if (position == word.length()) {
-            updatedLabel = "[WHITE]" + word;
-        }
+            for (int a = 0; a < state.length; a++) {
+                updatedLabel[a] = "[WHITE]" + word.charAt(a);                
+            }
+        }      
         
         return updatedLabel;
-    }   
-
+    }
+    
+    /* faster, but still doesn't resolve the problem
+    private String[] userLabel;
+    public void updateUserLabelS() {
+        // wrong values, needs to get next value per shuffled group
+        int current = Integer.valueOf(shuffled.keySet().toArray()[position].toString());
+        int previous = Integer.valueOf(shuffled.keySet().toArray()[position - 1].toString());
+        userLabel[previous] = "[GRAY]" + word.charAt(previous);
+        userLabel[current] = "[WHITE]" + word.charAt(current); 
+        
+        for (int a = 0; a < userLabel.length; a++) {
+            System.out.println(userLabel[a]);
+        } System.out.println();
+    }
+    
+    public String[] getUserLabel() {
+        return userLabel;
+    }
+    */   
+    
     public String getWord() {
         return word;
     }
@@ -166,7 +205,7 @@ public class WordHandler {
         for (int a = priorIndex - 1; a >= 0; a--) {          
             if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) {               
                 state[Integer.valueOf(shuffled.keySet().toArray()[position].toString())] = WHITE;                
-                state[priorIndex] = GRAY;                               
+                state[priorIndex] = GRAY;               
                 position++;
                 return true;
             }            
@@ -178,59 +217,10 @@ public class WordHandler {
     public Boolean handleRight() {
         String redLetter = String.valueOf(user.charAt(position)); // Gets the current to-Sort letter
         int priorIndex = Integer.valueOf(shuffled.keySet().toArray()[position - 1].toString()); // Gets the (unshuffled) index of the last placed letter
-
-        /*
-        int num = 0;
-        char check = user.charAt(position - 1);     // Get the character being sorted against
-        for (int a = 0; a < word.length(); a++) {
-            if (check == word.charAt(a)) {
-                num++;                              // Find out how many equal characters exist
-            }
-        }
-        
-        int[] positions = new int[num];
-        int pos = 0;
-        for (int a = 0; a < word.length(); a++) {
-            if (check == word.charAt(a)) {
-                positions[pos] = a;                 // Store their (unshuffled) positions so each can be checked
-                pos++;
-            }
-        }
-        
-        // uh, if you have THREE identical letters you have to do this for each pair
-        // which could be done with nested FOR loops
-        // 3 letters would need 2 runs, and you'd do pos[0], pos[0+1] where 0 advances
-        // thereby advancing through each pair, returning true when something is found
-        
-        boolean duplicates = true;
-        
-        if (num > 1) {
-            for (int a = positions[0] + 1; a < positions[1]; a++) {
-                if (state[a] == GRAY) {
-                    duplicates = false;
-                }
-            }
-        }
-        
-        if (duplicates) {
-            //System.out.println("PROBLEM");
-        }
-        
-        for (int a = priorIndex; a < word.length(); a++) {
-            if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) {  
-                //state[(int) shuffled.keySet().toArray()[position]] = WHITE;     // this causes whites on the LEFT when you press 
-                state[(int) shuffled.keySet().toArray()[a]] = WHITE;            // this causes double whites and whites on the left...                
-                state[priorIndex] = GRAY;
-                position++;
-                return true;
-            }
-        }
-        */
         
         for (int a = priorIndex; a < word.length(); a++) {             
             if (redLetter.equals(String.valueOf(word.charAt(a))) && (state[a] != GRAY && state[a] != WHITE)) {  
-                state[Integer.valueOf(shuffled.keySet().toArray()[position].toString())] = WHITE; // this causes whites on the LEFT when you press 
-                //state[(int) shuffled.keySet().toArray()[a]] = WHITE; // this causes double whites and whites on the left...
+                state[Integer.valueOf(shuffled.keySet().toArray()[position].toString())] = WHITE;
                 state[priorIndex] = GRAY;
                 position++;
                 return true;
@@ -261,5 +251,13 @@ public class WordHandler {
     
     public void setLang(int a) {
         LANG = a;
+    }
+    
+    public int getPosition() {
+        return position;
+    }
+    
+    public Map getShuffledMap() {
+        return shuffled;
     }
 }

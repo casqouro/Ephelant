@@ -15,31 +15,16 @@ public class Ephelant extends ApplicationAdapter {
     private static final int MENU = 0;
     private static final int GAME = 1;
     private StartScreen startScreen;
-    private GameScreen gameScreen;   
+    private GameScreen gameScreen;  
          
     /* THINGS TO DO    
         FEATURES
+        
+        1.  Add scores.          
     
-        FXD.  Use texture atlases instead of base inclusions
-    
-        0.  Use block letters instead of lower-case letters
-    
-        1.  Pressing 'ESC' should pause everything + ask yes/no to quit.
-            Maybe not because:
-            a) the game might be able to be condensed into a single screen
-            b) from a mobile perspective one button press is all it takes to
-               indicate that's what the user wants
-    
-        2.  Display locations and sizes need to be relative rather than hardcoded.
-    
-        3.  Add teasing labels when user fails.   
-    
-        4.  Make multi-language support more robust by adding assets so buttons
-            can reflect language choices.
-            
-        5.  Needs a tutorial or explanation
-    
-        6.  Identify time being up somehow by adding:
+        2.  Move the timer
+                    
+        3.  Identify time being up somehow by adding:
             a) adding a sound
             b) display the word with completed letters in white, and incomplete
                letters in red
@@ -47,21 +32,26 @@ public class Ephelant extends ApplicationAdapter {
             d) display teasing messages like:
                 "What's a [WORD]?"
                 "My grandma makes [WORD] too!"
-    
-        7.  SCORE.  SCORE.  SCORE.  There must be a score.
-            Local scores as well as global scores.
-    
-        8.  Different modes, such as:
-            Tour - giving the player words to spell until they fail
-            Timed - how many words can you spell in X seconds
-            Score - spell words until reaching a specific score
-    
-        9.  Underline or BOX the highlighted letter
+        
+        FXD.  Font images are no packed into the texture atlas.    
+        FXD.  The to-sort letter now has an animated border.           
+        FXD.  When pressing 'esc' you can see it clear the screen    
+        FXD.  Tooltips shifting downwards on first game-load.  Due to fontscaling.    
+        FXD.  Toggling minus with a too-long word is in place, nor cycling through
+              word length to a lower length, will generate a new word within the
+              given parameters.
+        FXD.  Use texture atlases instead of base inclusions    
+        FXD.  Use block letters instead of lower-case letters
+        FXD.  Display locations and sizes need to be relative rather than hardcoded.        
+        FXD.  I had removed isOverButton() from GameScreen, which is checked in
+              the render loop.  But, as an update, I removed the logic in
+              enter() and exit() for each button listener, since they have no effect.
+        FXD.  Letter highlight animation continues when game won or lost.
+        FXD.  Switching to minus during play generates a new word
+        FXD.  Write a method to search the text files for duplicates    
     
         BUGS (FXD = FIXED) (WNF = WILL NOT FIX)
     
-        IMPORTANT: switching to minus crashes when first starting up
-
         FXD - Crash if plus/minus button is clicked before anything else
               RESULT: minusplusListener now checks to see if handler.getWord() is null
         FXD - shuffleLetters() is being called twice on restart.
@@ -71,8 +61,7 @@ public class Ephelant extends ApplicationAdapter {
               RESULT: checkEndConditions() now stops and removes the timer. 
         FXD - The timer does not stop when a word is completed.
               RESULT: checkEndConditions() now stops and removes the timer.
-
-        WNF.  Relative positions: when duplicate characters exist a number of
+        WNF - Relative positions: when duplicate characters exist a number of
                                 issues crop up.
     
                                 (A) Left and Right can both be valid answers.
@@ -109,14 +98,14 @@ public class Ephelant extends ApplicationAdapter {
     
     @Override
     public void create() {
-        batch = new SpriteBatch();                                      
+        batch = new SpriteBatch();  
                          
         camera = new OrthographicCamera(1164, 1164);
         camera.position.set(camera.viewportWidth * 0.5f, camera.viewportHeight * 0.5f, 0);
         camera.update();                                                   
         
         gameScreen = new GameScreen();        
-        startScreen = new StartScreen(gameScreen);          
+        startScreen = new StartScreen(gameScreen);   
     }
                                      
     @Override
@@ -132,6 +121,7 @@ public class Ephelant extends ApplicationAdapter {
             startScreen.startScreenStage.draw();    
             
             if (startScreen.startGame) {
+                gameScreen.setup();
                 screen = GAME;
                 gameScreen.exitGame = false;
             } 
@@ -144,17 +134,12 @@ public class Ephelant extends ApplicationAdapter {
                 screen = MENU;
                 startScreen.startGame = false;
                 gameScreen.setupCalled = false;
-            }            
+            }                                               
             
-            if (startScreen.startGame && !gameScreen.setupCalled) {
-                gameScreen.tableSetup();
-                gameScreen.setupCalled = true;
-            }                        
-            
-            gameScreen.isOver();
+            gameScreen.isOverButton();
             gameScreen.checkEndConditions();
             gameScreen.gameScreenStage.act();             
-            gameScreen.gameScreenStage.draw();                                                            
+            gameScreen.gameScreenStage.draw();                                                                           
         }
     }
     
@@ -163,9 +148,3 @@ public class Ephelant extends ApplicationAdapter {
         batch.dispose();
     }
 }
-
-// counter showing letters remaining?
-// counter can have splash animations
-// could even award points for speed - faster you go, bigger anim, more points
-// the letter should pulsate
-// the letter should pulsate faster and brighter with less remaining time

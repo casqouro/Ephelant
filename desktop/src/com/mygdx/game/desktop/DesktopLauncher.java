@@ -7,12 +7,14 @@ import com.mygdx.game.Ephelant;
 public class DesktopLauncher {    
 	public static void main (String[] arg) {
             LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();  
+            //config.width = LwjglApplicationConfiguration.getDesktopDisplayMode().width;
+            //config.height = LwjglApplicationConfiguration.getDesktopDisplayMode().height;
+
             config.fullscreen = false;
-            config.width = LwjglApplicationConfiguration.getDesktopDisplayMode().width;
-            config.height = LwjglApplicationConfiguration.getDesktopDisplayMode().height;
+            config.resizable = false;
+            config.width = 800;
+            config.height = 600;  
             
-            config.width = 400;
-            config.height = 600;          
-            new LwjglApplication(new Ephelant(), config);            
+            LwjglApplication lwjglApplication = new LwjglApplication(new Ephelant(), config);            
 	}
 }

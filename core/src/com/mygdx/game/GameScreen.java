@@ -3,26 +3,26 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
 import com.badlogic.gdx.scenes.scene2d.ui.HorizontalGroup;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageTextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageTextButton.ImageTextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
+import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.utils.Align;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.logging.Level;
@@ -33,29 +33,35 @@ public class GameScreen {
     private final TextureAtlas everything;    
     private final WordHandler handler;  
     private final Table layout;  
-    private final HorizontalGroup hGroup;    
+    private final HorizontalGroup letterGroup;  
+    private final HorizontalGroup answerGroup;
+    private final HorizontalGroup buttonGroup;
+    private final HorizontalGroup settingGroup;
     private final TimerActor timerActor;  
-    private final HashMap<String, Label> letterMap;
-    
-    private final Label wordLabel;
-    private final Label userLabel; 
-    private final Label detailLabel; 
-    private final Label letter0;
-    private final Label letter1;
-    private final Label letter2;
-    private final Label letter3;
-    private final Label letter4; 
-    private final Label letter5;
-    private final Label letter6;
-    private final Label letter7;
-    private final Label letter8;
-    private final Label letter9;    
-    private final Button newWordButton;
-    private final Button readyButton;
-    private final Button restartButton;
+    private final HashMap<String, AnimatedImageTextButton> buttonMap;
+     
+    private final Stack stack;
+    private final Label detailLabel;  
+    private final HorizontalGroup detailGroup;
+    private final Stack detailStack;
+    private final ImageTextButton nextLetter;
+    private final TextButton newWordButton;
+    private final TextButton readyButton;
+    private final TextButton restartButton;
     private final Button difficultyButton;
     private final Button minusplusButton;
     private final Button numbersButton;
+    
+    private final AnimatedImageTextButton button0;
+    private final AnimatedImageTextButton button1;
+    private final AnimatedImageTextButton button2;
+    private final AnimatedImageTextButton button3;
+    private final AnimatedImageTextButton button4;    
+    private final AnimatedImageTextButton button5;
+    private final AnimatedImageTextButton button6;
+    private final AnimatedImageTextButton button7;
+    private final AnimatedImageTextButton button8;
+    private final AnimatedImageTextButton button9;    
         
     private int LANG = 0;
     private int DIFFICULTY = 1;
@@ -74,251 +80,279 @@ public class GameScreen {
     private boolean ready = false;
     public boolean exitGame = false;
     public boolean setupCalled = false; 
-            
+
+    ImageTextButtonStyle style;
+    private int highlightReference;
+    
+    private Image firework;
+
     public GameScreen() {
         gameScreenStage = new Stage();
         gameScreenStage.addListener(new gameInputListener()); 
         everything = new TextureAtlas(Gdx.files.internal("everything.atlas"));
         handler = new WordHandler();
         layout = new Table();
-        layout.setFillParent(true);  
+        layout.setFillParent(true);          
+        stack = new Stack();
         layout.setDebug(true);
-        hGroup = new HorizontalGroup();        
-                        
-        FileHandle fontHandle = Gdx.files.internal("Raleway-Medium.fnt");
-        BitmapFont font = new BitmapFont(fontHandle);
-        font.getData().markupEnabled = true;
-        Label.LabelStyle fontStyle = new Label.LabelStyle(font, Color.WHITE);
+                
+        int padding = 50;
+        int paddingTotal = 50 * 4; // helps determine Stack positioning
+        int spacing = 5;
+        letterGroup = new HorizontalGroup().padTop(padding).padBottom(padding).space(spacing);
+        answerGroup = new HorizontalGroup().padTop(padding).padBottom(padding).space(spacing);
+        buttonGroup = new HorizontalGroup();
+        settingGroup = new HorizontalGroup().padTop(15);     
+                             
+        BitmapFont font = new BitmapFont(Gdx.files.internal("raleway34.fnt"), everything.findRegion("raleway34")); 
+        font.getData().markupEnabled = true;                
+        BitmapFont gameplayFont = new BitmapFont(Gdx.files.internal("raleway40.fnt"), everything.findRegion("raleway40"));
+        gameplayFont.getData().markupEnabled = true;
+        Label.LabelStyle fontStyle = new Label.LabelStyle(gameplayFont, Color.WHITE);        
         fontStyle.background = new TextureRegionDrawable(everything.findRegion("black"));        
+        
+        detailLabel = new Label("\n\n\n", fontStyle);    
+        detailLabel.setFontScale(0.6f);
+        
+        TextureAtlas violetAtlas = new TextureAtlas(Gdx.files.internal("violetshot.atlas"));
+        Animation violetAnim = new Animation(1 / 7f, violetAtlas.getRegions());
+        violetAnim.setPlayMode(Animation.PlayMode.LOOP);
+        TextureAtlas blueAtlas = new TextureAtlas(Gdx.files.internal("blueshot.atlas"));
+        Animation blueAnim = new Animation(1 / 7f, blueAtlas.getRegions());
+        blueAnim.setPlayMode(Animation.PlayMode.LOOP);
+        
+        firework = new AnimatedImage(new AnimatedDrawable(violetAnim));
+        
+        TextureRegionDrawable newbgr = new TextureRegionDrawable(everything.findRegion("newbgr"));           
+        TextureAtlas highlightAtlas = new TextureAtlas(Gdx.files.internal("highlight.atlas"));
+        final Animation highlightAnim = new Animation(1 / 4f, highlightAtlas.getRegions()); 
+        highlightAnim.setPlayMode(Animation.PlayMode.LOOP_PINGPONG);
+        AnimatedDrawable adtest = new AnimatedDrawable(highlightAnim);
 
-        wordLabel = new Label("...", fontStyle);
-        //wordLabel.setBounds(0, 400, Gdx.graphics.getWidth(), 200);
-        wordLabel.setWrap(true);        
-        wordLabel.setAlignment(Align.center);     
-        userLabel = new Label("...", fontStyle);
-        //userLabel.setPosition(100, 100);      
-        //userLabel.setBounds(0, 300, Gdx.graphics.getWidth(), 100);
-        userLabel.setWrap(true);
-        userLabel.setAlignment(Align.center);
-        detailLabel = new Label("...", fontStyle);
-        detailLabel.setWrap(true);    
+        button0 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));    
+        button1 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));
+        button2 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));
+        button3 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));
+        button4 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));
+        button5 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));
+        button6 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));
+        button7 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));
+        button8 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));    
+        button9 = new AnimatedImageTextButton("", new ImageTextButtonStyle(newbgr, adtest, newbgr, gameplayFont));     
         
-        LabelStyle backgroundStyle = new LabelStyle();
-        backgroundStyle.font = font;
-        backgroundStyle.background = new TextureRegionDrawable(new TextureRegion(new Texture((Gdx.files.internal("background.png")))));
-        letter0 = new Label("", backgroundStyle);
-        letter0.setAlignment(Align.center);
-        letter1 = new Label("", backgroundStyle);        
-        letter1.setAlignment(Align.center);        
-        letter2 = new Label("", backgroundStyle);        
-        letter2.setAlignment(Align.center);
-        letter3 = new Label("", backgroundStyle);        
-        letter3.setAlignment(Align.center);        
-        letter4 = new Label("", backgroundStyle);        
-        letter4.setAlignment(Align.center);
-        letter5 = new Label("", backgroundStyle);        
-        letter5.setAlignment(Align.center);
-        letter6 = new Label("", backgroundStyle);        
-        letter6.setAlignment(Align.center);
-        letter7 = new Label("", backgroundStyle);        
-        letter7.setAlignment(Align.center);
-        letter8 = new Label("", backgroundStyle);        
-        letter8.setAlignment(Align.center);
-        letter9 = new Label("", backgroundStyle);        
-        letter9.setAlignment(Align.center); 
-        letterMap = new HashMap<>();
-        letterMap.put("letter0", letter0);
-        letterMap.put("letter1", letter1);
-        letterMap.put("letter2", letter2);
-        letterMap.put("letter3", letter3);
-        letterMap.put("letter4", letter4);
-        letterMap.put("letter5", letter5);
-        letterMap.put("letter6", letter6);
-        letterMap.put("letter7", letter7);                
-        letterMap.put("letter8", letter8);        
-        letterMap.put("letter9", letter9);                              
-        
-        newWordButton = new Button();         
-        TextureRegionDrawable newWordTexture =  new TextureRegionDrawable(everything.findRegion("newword"));        
-        newWordButton.setStyle(new Button.ButtonStyle(newWordTexture, newWordTexture, newWordTexture));
-        newWordButton.addListener(new newWordListener());         
-        //newWordButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);              
-        
-        readyButton = new Button();
-        TextureRegionDrawable notreadyTexture = new TextureRegionDrawable(everything.findRegion("notready"));        
-        TextureRegionDrawable readyTexture = new TextureRegionDrawable(everything.findRegion("ready"));        
-        readyButton.setStyle(new Button.ButtonStyle(notreadyTexture, notreadyTexture, readyTexture));        
-        readyButton.addListener(new readyListener());        
-        //readyButton.setBounds(50, 300, Gdx.graphics.getWidth() - 100, 100);           
-        
-        restartButton = new Button();
-        TextureRegionDrawable restartTexture = new TextureRegionDrawable(everything.findRegion("restart"));        
-        restartButton.setStyle(new Button.ButtonStyle(restartTexture, restartTexture, restartTexture));
-        //restartButton.setBounds(50, 150, Gdx.graphics.getWidth() - 100, 100);
+        buttonMap = new HashMap<>();
+        buttonMap.put("button0", button0);
+        buttonMap.put("button1", button1);
+        buttonMap.put("button2", button2);
+        buttonMap.put("button3", button3);
+        buttonMap.put("button4", button4);    
+        buttonMap.put("button5", button5);
+        buttonMap.put("button6", button6);
+        buttonMap.put("button7", button7);
+        buttonMap.put("button8", button8);
+        buttonMap.put("button9", button9);  
+                                
+        nextLetter = new ImageTextButton("", new ImageTextButtonStyle(newbgr, newbgr, newbgr, font));        
+                           
+        TextureRegionDrawable textButtonUp = new TextureRegionDrawable(everything.findRegion("betterbuttontwo"));   
+        TextureRegionDrawable textButtonDown = new TextureRegionDrawable(everything.findRegion("betterbuttontwodown"));  
+        TextureRegionDrawable textButtonDisabled = new TextureRegionDrawable(everything.findRegion("betterbuttondisabled"));          
+        TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle((Drawable) textButtonUp, (Drawable) textButtonDown, (Drawable) textButtonDisabled, font);                 
+        newWordButton = new TextButton("New Word", textButtonStyle);
+        newWordButton.addListener(new newWordListener());     
+        newWordButton.setDisabled(true);
+        readyButton = new TextButton("Ready", textButtonStyle);     
+        readyButton.addListener(new readyListener());          
+        restartButton = new TextButton("Restart", textButtonStyle);
         restartButton.addListener(new restartListener()); 
+        restartButton.setDisabled(true);
         
         difficultyButton = new Button();
         TextureRegionDrawable mediumTexture = new TextureRegionDrawable(everything.findRegion("medium"));
         difficultyButton.setStyle(new Button.ButtonStyle(mediumTexture, mediumTexture, mediumTexture));
-        //difficultyButton.setBounds(50, 50, 100, 100);
         difficultyButton.addListener(new difficultyListener()); 
         
         numbersButton = new Button();
         TextureRegionDrawable number5 = new TextureRegionDrawable(everything.findRegion("number5"));        
         numbersButton.setStyle(new Button.ButtonStyle(number5, number5, number5));
-        //numbersButton.setBounds(150, 50, 100, 100);
         numbersButton.addListener(new numbersListener());        
 
         minusplusButton = new Button();
         TextureRegionDrawable plusTexture = new TextureRegionDrawable(everything.findRegion("plus"));        
         minusplusButton.setStyle(new Button.ButtonStyle(plusTexture, plusTexture, plusTexture));
-        //minusplusButton.setBounds(250, 50, 100, 100);
         minusplusButton.addListener(new minusplusListener());
                                        
         TextureAtlas timerAtlas = new TextureAtlas(Gdx.files.internal("timer.atlas")); 
         Animation timerAnim = new Animation(1 / (timerAtlas.getRegions().size / 10f), timerAtlas.getRegions());   
-        timerActor = new TimerActor(timerAnim);   
+        timerActor = new TimerActor(timerAnim);                  
                 
         error = Gdx.audio.newSound(Gdx.files.internal("error.ogg"));
         correct = Gdx.audio.newSound(Gdx.files.internal("correct.ogg"));  
-        click = Gdx.audio.newSound(Gdx.files.internal("click.ogg"));             
-    }
+        click = Gdx.audio.newSound(Gdx.files.internal("click.ogg"));
         
-    public void tableSetup() {
-        gameScreenStage.clear();
-        gameScreenStage.addListener(new gameInputListener());
-        layout.clear();  
-        gameScreenStage.addActor(layout);
-        hGroup.clear();
-        layout.add(hGroup).expandX().colspan(4);
+        style = new ImageTextButtonStyle(newbgr, newbgr, newbgr, font);        
         
-        hGroup.addActor(letter0);
-        hGroup.addActor(letter1);
-        hGroup.addActor(letter2);
-        hGroup.addActor(letter3);
-        hGroup.addActor(letter4);
-        hGroup.addActor(letter5);
-        hGroup.addActor(letter6);        
-        hGroup.addActor(letter7);
-        hGroup.addActor(letter8);
-        hGroup.addActor(letter9);
-        layout.row();
-                                        
-        AtlasRegion newwordRegion = new AtlasRegion(everything.findRegion("newword"));        
-        layout.add(newWordButton).prefHeight(newwordRegion.originalHeight)
-                                 .prefWidth(newwordRegion.originalWidth)
-                                 .minHeight(newwordRegion.originalHeight / 2)
-                                 .maxHeight(newwordRegion.originalHeight * 2)
-                                 .minWidth(newwordRegion.originalWidth / 2)
-                                 .maxWidth(newwordRegion.originalWidth * 2)
-                                 .colspan(2);                
-        AtlasRegion readyRegion = new AtlasRegion(everything.findRegion("ready"));        
-        layout.add(readyButton).prefHeight(readyRegion.originalHeight)
-                               .prefWidth(readyRegion.originalWidth)
-                               .minHeight(readyRegion.originalHeight / 2)
-                               .maxHeight(readyRegion.originalHeight * 2)
-                               .minWidth(readyRegion.originalWidth / 2)
-                               .maxWidth(readyRegion.originalWidth * 2)
-                               .colspan(1);
-        readyButton.setDisabled(true);
-        readyButton.getStyle().up = new TextureRegionDrawable(everything.findRegion("notready"));
-        readyButton.getStyle().down = new TextureRegionDrawable(everything.findRegion("notready"));        
-        layout.row();        
+        gameScreenStage.addActor(stack);
+        layout.add(letterGroup).row();
+        layout.getCell(letterGroup).prefHeight(newbgr.getMinHeight() + (padding * 2));
+        layout.getCell(letterGroup).minHeight(newbgr.getMinHeight() + (padding * 2));        
+        layout.add(answerGroup).row();
+        layout.getCell(answerGroup).prefHeight(newbgr.getMinHeight() + (padding * 2));
+        layout.getCell(answerGroup).minHeight(newbgr.getMinHeight() + (padding * 2));        
+        layout.add(buttonGroup).row();
+        layout.add(settingGroup).row();                
+        buttonGroup.addActor(newWordButton);
+        buttonGroup.addActor(readyButton);                
+        settingGroup.addActor(difficultyButton);
+        settingGroup.addActor(numbersButton);        
+        settingGroup.addActor(minusplusButton);                   
+        stack.addActor(layout);       
+        //layout.addActor(firework);
         
-        AtlasRegion difficultyRegion = new AtlasRegion(everything.findRegion("easy"));
-        layout.add(difficultyButton).prefHeight(difficultyRegion.originalHeight / 2)
-                                    .prefWidth(difficultyRegion.originalWidth / 3)
-                                    .minHeight(difficultyRegion.originalHeight / 2)
-                                    .maxHeight(difficultyRegion.originalHeight * 2)
-                                    .minWidth(readyRegion.originalWidth / 3)
-                                    .maxWidth(readyRegion.originalWidth / 3);
-        AtlasRegion numberRegion = new AtlasRegion(everything.findRegion("number5"));   
-        layout.add(numbersButton).prefHeight(numberRegion.originalHeight / 2)
-                                 .prefWidth(numberRegion.originalWidth / 3)
-                                 .minHeight(numberRegion.originalHeight / 2)
-                                 .maxHeight(numberRegion.originalHeight * 2)
-                                 .minWidth(readyRegion.originalWidth / 3)
-                                 .maxWidth(readyRegion.originalWidth / 3);
-        AtlasRegion minusplusRegion = new AtlasRegion(everything.findRegion("minus"));   
-        layout.add(minusplusButton).prefHeight(minusplusRegion.originalHeight / 2)
-                                   .prefWidth(minusplusRegion.originalWidth / 3)
-                                   .minHeight(minusplusRegion.originalHeight / 2)
-                                   .maxHeight(minusplusRegion.originalHeight * 2)
-                                   .minWidth(readyRegion.originalWidth / 3)
-                                   .maxWidth(readyRegion.originalWidth / 3);
-        
-        wordLabel.setText("");
-        userLabel.setText("");
-        ready = false;        
-        timerActor.reset();             
+        detailStack = new Stack();
+        detailGroup = new HorizontalGroup();
+        detailGroup.addActor(detailLabel);        
+        detailStack.addActor(detailGroup); 
+        int stacksAbsurdInternalWidth = 75;
+        stack.setPosition((layout.getPrefWidth()) - stacksAbsurdInternalWidth, paddingTotal);          
+        System.out.println(layout.getPrefHeight());
     }     
+    
+    public void setup() {
+        letterGroup.clear();   
+        answerGroup.clear();
+        buttonGroup.addActor(newWordButton);
+        buttonGroup.addActor(readyButton);
+        buttonGroup.removeActor(restartButton);    
+
+        newWordButton.setTouchable(Touchable.enabled);
+        newWordButton.setChecked(false);
+        newWordButton.setText("[WHITE]New Word");
+                
+        ready = false;                   
+        readyButton.setTouchable(Touchable.disabled);
+        readyButton.setChecked(true);
+        readyButton.setText("[GRAY]Ready");
+    
+        timerActor.reset();       
+    }
             
     private class newWordListener extends ClickListener {
         @Override
         public void clicked(InputEvent event, float x, float y) {
-            click.play();      
+            click.play();    
+            timerActor.remove();
+            newWordSetup();  
             
-            String word = "";
-            try { 
-                word = (handler.selectNewWord(NUMBER, MINUSPLUS)); 
-            } catch (IOException ex) {
-                Logger.getLogger(Ephelant.class.getName()).log(Level.SEVERE, null, ex);
+            if (readyButton.isChecked()) {
+                readyButton.setTouchable(Touchable.enabled);
+                readyButton.setChecked(false);
+                readyButton.setText("[WHITE]Ready");                
             }
-            
-            hGroup.clear();            
-            for (int a = 0; a < word.length(); a++) {
-                letterMap.get("letter" + String.valueOf(a)).setText(String.valueOf(word.charAt(a)));
-                hGroup.addActor(letterMap.get("letter" + String.valueOf(a)));
-            }
-            
-            readyButton.getStyle().up = readyButton.getStyle().checked;
-            readyButton.getStyle().down = readyButton.getStyle().checked;   
-            readyButton.setDisabled(false);                            
         }
-    } 
+    }
     
+    private void newWordSetup() {          
+        String word = "";
+        try { 
+            word = (handler.selectNewWord(NUMBER, MINUSPLUS)); 
+        } catch (IOException ex) {
+            Logger.getLogger(Ephelant.class.getName()).log(Level.SEVERE, null, ex);
+        }
+                
+        letterGroup.clear();
+        for (int a = 0; a < word.length(); a++) {
+            letterGroup.addActor(buttonMap.get("button" + String.valueOf(a)));
+            buttonMap.get("button" + String.valueOf(a)).setText(String.valueOf(word.charAt(a)));
+        }                
+        
+        animateLetter();
+    }
+        
     private class readyListener extends ClickListener {
         @Override
         public void clicked(InputEvent event, float x, float y) {
             if (!readyButton.isDisabled()) {
                 click.play();            
 
-                newWordButton.remove();
-                readyButton.remove();
-                gameScreenStage.addActor(restartButton);
-                //gameScreenStage.addActor(userLabel);
-                gameScreenStage.addActor(timerActor);                
-                timerActor.runTimer(); 
-
-                setTimer(handler.getWord());
-
-                String update = handler.updateUserLabel();
-                for (int a = 0; a < letterMap.size(); a++) {
-                    
-                }
+                buttonGroup.removeActor(readyButton);
+                buttonGroup.addActor(restartButton);
                 
-                wordLabel.setText(handler.updateWordLabel());
-                userLabel.setText(handler.updateUserLabel());
+                newWordButton.setTouchable(Touchable.disabled);
+                newWordButton.setChecked(true);
+                newWordButton.setText("[GRAY]New Word");  
+                
+                answerGroup.addActor(nextLetter);                
+                answerGroup.addActor(timerActor);                
+                //gameScreenStage.addActor(timerActor);
+                setTimer(handler.getWord());                
+                timerActor.runTimer();                               
+                
                 ready = true;   
                 readyButton.setChecked(false);
+                updateLabelGroupDisplay();                
             }
         }
     }
-        
+    
     private class restartListener extends ClickListener {
         @Override
         public void clicked(InputEvent event, float x, float y) {
-            click.play();            
+            click.play();          
             
-            gameScreenStage.addActor(newWordButton);
-            gameScreenStage.addActor(readyButton);           
+            answerGroup.clear();
+            
+            timerActor.remove();
+            
+            buttonGroup.addActor(newWordButton);
+            buttonGroup.addActor(readyButton);
+            buttonGroup.removeActor(restartButton);
+            
+            newWordButton.setTouchable(Touchable.enabled);
+            newWordButton.setChecked(false);
+            newWordButton.setText("[WHITE]New Word");              
+            
             timerActor.reset();    
             timerActor.remove();                    
-            String word = handler.restart();
-            wordLabel.setText(word);  
-            ready = false;            
+            handler.restart();  
+            ready = false;                        
+            
+            nextLetter.setText("");
+            String word = handler.getWord();
+            for (int a = 0; a < word.length(); a++) {
+                letterGroup.addActor(buttonMap.get("button" + String.valueOf(a)));
+                buttonMap.get("button" + String.valueOf(a)).setText(String.valueOf(word.charAt(a)));
+            }              
+            
+            animateLetter();            
         }   
-    }
+    }    
+    
+    // Push each letter + coloring to individual labels for display    
+    private void updateLabelGroupDisplay() {          
+        letterGroup.clear();        
+        String[] update = handler.updateUserLabel();  
+        for (int a = 0; a < update.length; a++) {
+            if (!update[a].equals("")) {
+                letterGroup.addActor(buttonMap.get("button" + String.valueOf(a)));                
+                buttonMap.get("button" + String.valueOf(a)).setText(update[a]);                 
+            }                
+        }
+        
+        animateLetter();
+        nextLetter.setText(handler.updateWordLabel());
+    }      
+    
+    private void animateLetter() {
+        // stops animating the last reference
+        ImageTextButton buttonReference = buttonMap.get("button" + String.valueOf(highlightReference));
+        buttonReference.getStyle().up = buttonReference.getStyle().checked; 
+        
+        // animates the next reference
+        highlightReference = Integer.valueOf(handler.getShuffledMap().keySet().toArray()[handler.getPosition() - 1].toString());
+        buttonReference = buttonMap.get("button" + String.valueOf(highlightReference));
+        buttonReference.getStyle().up = buttonReference.getStyle().down;         
+    }    
     
     private void setTimer(String word) {
         int time = DIFFICULTY;
@@ -335,35 +369,30 @@ public class GameScreen {
                 timerActor.setTimerLength((float) (length - (length * .25))); // needs to get smaller
                 break;
         }         
-    }
-    
-    public Boolean isOver() {
-        if (difficultyButton.isOver() || numbersButton.isOver() || minusplusButton.isOver()) {
-            displayDetail();
-            return true;
-        }
-        return true;
-    }   
+    }    
     
     public void checkEndConditions() {  
         if (ready) {
             if (timerActor.isDone() || handler.isComplete()) {
+                answerGroup.clear();
+                
+                newWordButton.setTouchable(Touchable.enabled);
+                newWordButton.setChecked(false);
+                newWordButton.setText("[WHITE]New Word");
+                
+                ImageTextButton buttonReference = buttonMap.get("button" + String.valueOf(highlightReference));
+                buttonReference.getStyle().up = buttonReference.getStyle().checked;                               
+                
                 ready = false;   
                 timerActor.stopTimer();
-                timerActor.remove();
             }            
         }
     }    
     
-    private void displayDetail() {
-            gameScreenStage.addActor(detailLabel);
-            detailLabel.setFontScale(0.6f);
-            detailLabel.setBounds(25, 200, Gdx.graphics.getWidth() - 25, 150);            
-            
-            if (difficultyButton.isOver()) {
-                difficultyButton.toFront();
-                
-                String easy = "Easy:         +25% time\n"
+    // Tool-tips are displayed by adding text to the label
+    private void displayDetail() {            
+            if (difficultyButton.isOver()) {                    
+                String easy = "Easy:         Unlimited time\n"
                             + "                   No penalties\n";
                 String medium = "Medium:   Normal\n";
                 String hard = "Hard:         -25% time";
@@ -382,10 +411,11 @@ public class GameScreen {
                 }
 
                 detailLabel.setText(collated);
+                detailStack.setPosition(200 + (layout.getPrefWidth() - detailGroup.getPrefWidth()) / 2, 250);                
             }
                         
-            if (numbersButton.isOver() || minusplusButton.isOver()) {
-                numbersButton.toFront();
+            if (numbersButton.isOver() || minusplusButton.isOver()) {     
+                detailStack.setPosition(layout.getPrefWidth(), 250);
                 
                 String value = Integer.toString(NUMBER);
                 String operator = "+";
@@ -396,14 +426,23 @@ public class GameScreen {
                 
                 detailLabel.setText("Minimum or maximum word size\n"
                                   + "Ex: 8+ is words of 8-10 letters\n"
-                                  + "Ex: 6- is words of 5-6 letters\n\n"
-                                  + "Currently set at:  [GREEN]" + value + operator);
-            }            
-    }
+                                  + "Ex: 6- is words of 5-6 letters\n"
+                                  + "Currently set at:  [GREEN]" + value + operator);      
+                
+                detailStack.setPosition(200 + (layout.getPrefWidth() - detailGroup.getPrefWidth()) / 2, 250);                   
+            }
+           
+    }   
     
-    private void removeDetail() {
-        detailLabel.remove();
-    }     
+    // Called in Ephelant (main) to display/render tool-tips on mouse-over
+    public void isOverButton() {
+        if (difficultyButton.isOver() || numbersButton.isOver() || minusplusButton.isOver()) {
+            displayDetail();
+            gameScreenStage.addActor(detailStack);
+        } else {
+            detailStack.remove();
+        }
+    }
     
     private class difficultyListener extends ClickListener {
         @Override
@@ -437,25 +476,6 @@ public class GameScreen {
                     break;
             }            
         }          
-        
-        /* Keeping this prevents a render-flicker, where for an instant the
-           detail pop-up is not displayed, so the background pokes through.
-        
-           So even though there's a method in the main render() function, 
-           maintaining this method in every button in the tool-tip line makes
-           moving between them appear much smoother.
-        */
-        @Override
-        public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {   
-            displayDetail();
-        }        
-                
-        @Override
-        public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-            if (!difficultyButton.isOver() && !numbersButton.isOver() && !minusplusButton.isOver()) {
-                removeDetail();
-            }
-        }
     }              
     
     private class numbersListener extends ClickListener {
@@ -506,20 +526,12 @@ public class GameScreen {
                     numbersButton.getStyle().down = number10;
                     numbersButton.getStyle().checked = number10;                    
                     break;                    
+            }    
+            
+            if (handler.getWord() != null && handler.getWord().length() > NUMBER && ready == false) {                        
+                newWordSetup();                      
             }            
         }
-        
-        @Override
-        public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {   
-            displayDetail();
-        }
-        
-        @Override
-        public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) { 
-            if (!difficultyButton.isOver() && !numbersButton.isOver() && !minusplusButton.isOver()) {
-                removeDetail();
-            }
-        }        
     }                
     
     private class minusplusListener extends ClickListener {
@@ -532,7 +544,7 @@ public class GameScreen {
             if (MINUSPLUS > PLUS) {
                 MINUSPLUS = MINUS;
             }
-            
+
             switch (MINUSPLUS) {
                 case MINUS:
                     TextureRegionDrawable minusTexture = new TextureRegionDrawable(everything.findRegion("minus"));                    
@@ -540,12 +552,8 @@ public class GameScreen {
                     minusplusButton.getStyle().down = minusTexture;
                     minusplusButton.getStyle().checked = minusTexture;                    
 
-                    if (handler.getWord() != null && handler.getWord().length() > NUMBER) {
-                        try {
-                            wordLabel.setText(handler.selectNewWord(NUMBER, MINUSPLUS));
-                        } catch (IOException ex) {
-                            Logger.getLogger(GameScreen.class.getName()).log(Level.SEVERE, null, ex);
-                        }
+                    if (handler.getWord() != null && handler.getWord().length() > NUMBER && ready == false) {                        
+                        newWordSetup();                      
                     }
                     break;
                 case PLUS:
@@ -556,34 +564,21 @@ public class GameScreen {
                     break;                   
             }            
         }
-        
-        @Override
-        public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {   
-            displayDetail();
-        }        
-        
-        @Override
-        public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) { 
-            if (!difficultyButton.isOver() && !numbersButton.isOver() && !minusplusButton.isOver()) {
-                removeDetail();
-            }
-        }        
     }      
     
     private class gameInputListener extends InputListener {
         @Override
         public boolean keyDown(InputEvent event, int keycode) {
             switch (keycode) {
-                case Input.Keys.ESCAPE:
-                    exitGame = true;   
+                case Input.Keys.ESCAPE: 
+                    exitGame = true;                      
                     break;
                 case Input.Keys.LEFT:
                 case Input.Keys.A:
                     if (ready) { 
                         if (handler.handleLeft()) {
                             correct.play();
-                            wordLabel.setText(handler.updateWordLabel());
-                            userLabel.setText(handler.updateUserLabel());
+                            updateLabelGroupDisplay();
                         } else {
                             error.play();
                             if (DIFFICULTY != EASY) {
@@ -597,8 +592,7 @@ public class GameScreen {
                     if (ready) {
                         if (handler.handleRight()) {
                             correct.play();
-                            wordLabel.setText(handler.updateWordLabel());
-                            userLabel.setText(handler.updateUserLabel());
+                            updateLabelGroupDisplay();
                         } else {
                             error.play();
                             if (DIFFICULTY != EASY) {
